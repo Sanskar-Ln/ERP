@@ -15,13 +15,20 @@ the full milestone list and ARCHITECTURE.md for the system map.
   ZodPipe validation + zod→OpenAPI; Swagger at /api/docs. Smoke-tested
   end-to-end against local Postgres.
 
+- **M3 — Master data**: metals/purities, stone types, HSN codes,
+  tax-rule matrix (pure `resolveTaxRule` domain fn, 5 tests) with
+  `/tax-rules/resolve` dry-run, customers+KYC/suppliers/karigars,
+  append-only metal-rate board (`/metal-rates/latest`, audited MANUAL_FIX).
+  `prisma/seed.ts` seeds demo tenant + 2026 India GST defaults.
+  Smoke-tested incl. RBAC denial.
+
 ## In progress
 
-- M3 — Master data module.
+- M4 — Inventory module.
 
 ## Resume point
 
-Build `apps/api/src/modules/master-data`: CRUD for metals/purities,
-stone types, HSN codes, tax-rule matrix (+ resolver seed data), customers
-(KYC), suppliers, karigars, metal rates (feed + manual fix, latest-rate
-endpoint). Then prisma/seed.ts with the 2026 India tax defaults.
+Build `apps/api/src/modules/inventory`: composite item creation (metal +
+stone components, nested tx, PURCHASE_IN movement), lots, append-only
+stock movements + reversal, inter-branch transfer (OUT/IN pair), stock
+summary. Domain: dual-unit stock math if needed. Then M5 tagging.

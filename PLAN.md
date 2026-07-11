@@ -39,7 +39,7 @@ Monorepo: NestJS API + Next.js web admin + Expo mobile + shared package.
 - [x] **M2 — API platform**: NestJS app, Prisma schema + migrations,
       tenant-scoped query layer, JWT auth, RBAC (owner/manager/salesperson/
       accountant), audit log, Swagger.
-- [ ] **M3 — Master data**: metals & purities, stone types (4Cs, carat/ratti,
+- [x] **M3 — Master data**: metals & purities, stone types (4Cs, carat/ratti,
       certificates IGI/GIA/SGL), HSN codes, configurable tax-rule matrix,
       customers + KYC, suppliers, karigars, metal-rate feed with manual fix.
 - [ ] **M4 — Inventory**: composite items (metal + stone + making
