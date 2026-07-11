@@ -29,13 +29,23 @@ the full milestone list and ARCHITECTURE.md for the system map.
   dual-unit /stock/summary. Domain movement-rules (5 tests). Smoke-tested
   full cycle: create → adjust → reverse → transfer → receive.
 
+- **M5 — Tagging & barcode**: per-piece tags (`ITEMCODE#ordinal`,
+  capped at piece count), scan endpoint, bwip-js PNG rendering (Code128
+  default, DataMatrix verified), label templates (mm size + field list),
+  batch HTML label sheets with data-URI barcodes. Price-free payload
+  triple-enforced (domain fns, 4 tests). Smoke-tested end-to-end.
+
 ## In progress
 
-- M5 — Tagging & barcode.
+- M6 — Billing & documents.
 
 ## Resume point
 
-Build `apps/api/src/modules/tagging`: Tag creation per piece (tagCode =
-itemCode#ordinal), label templates CRUD, batch label generation rendering
-barcodes server-side with bwip-js (Code128 default, DataMatrix option),
-PNG per tag + printable HTML sheet. Barcode payload = itemCode ONLY.
+Build domain pricing + GST engine (pure, heavily tested):
+`domain/pricing/price-item.ts` (metal value via rate+wastage, stones,
+making charge rules, discounts), `domain/billing/gst-engine.ts`
+(itemized 3%+5% vs studded composite 3%, CGST/SGST vs IGST, mixed-supply
+guard, old-gold value-addition rule), then `modules/billing` document
+engine: one cart → TAX_INVOICE/ESTIMATE/DELIVERY_CHALLAN, NumberSeries,
+SALE_OUT/EXCHANGE_IN movements, estimate→invoice conversion, cancel with
+reversal — all in one tx with audit rows.

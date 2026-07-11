@@ -45,7 +45,7 @@ Monorepo: NestJS API + Next.js web admin + Expo mobile + shared package.
 - [x] **M4 — Inventory**: composite items (metal + stone + making
       components), dual-unit tracking (pieces + gross/net/stone weight +
       wastage), lots, append-only stock movements, inter-branch transfer.
-- [ ] **M5 — Tagging & barcode**: per-piece tags (barcode encodes stable item
+- [x] **M5 — Tagging & barcode**: per-piece tags (barcode encodes stable item
       code only — repricing never reprints), label templates, batch label
       generation, server-side barcode via bwip-js (Code128 default,
       DataMatrix option).
