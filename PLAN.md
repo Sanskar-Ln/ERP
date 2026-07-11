@@ -34,7 +34,7 @@ Monorepo: NestJS API + Next.js web admin + Expo mobile + shared package.
 ## Milestones (in order; commit + push after each)
 
 - [x] **M0 — Monorepo scaffold** + PLAN.md / PROGRESS.md / ARCHITECTURE.md.
-- [ ] **M1 — `packages/shared`**: enums, zod schemas, money (paise) &
+- [x] **M1 — `packages/shared`**: enums, zod schemas, money (paise) &
       weight (mg / carat-cent) fixed-point utilities, with unit tests.
 - [ ] **M2 — API platform**: NestJS app, Prisma schema + migrations,
       tenant-scoped query layer, JWT auth, RBAC (owner/manager/salesperson/
