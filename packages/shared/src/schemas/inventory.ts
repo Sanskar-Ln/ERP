@@ -5,7 +5,7 @@
  */
 import { z } from 'zod';
 import { ItemStatus, MakingChargeType, MovementType, TransferStatus } from '../enums';
-import { zBps, zCarats, zGrams, zId, zPaise, zRatti } from './common';
+import { zBps, zCarats, zGrams, zGramsSigned, zId, zPaise, zRatti } from './common';
 import { zCertificateRef, zDiamond4C } from './master-data';
 
 /** Metal component of a composite item. Weights as gram strings (3 dp). */
@@ -90,7 +90,7 @@ export const zCreateStockMovement = z.object({
   movementType: z.nativeEnum(MovementType),
   branchId: zId,
   pieces: z.number().int(),
-  grossWeightG: zGrams,
+  grossWeightG: zGramsSigned, // ADJUSTMENT may subtract weight
   refDocumentId: zId.nullable().optional(),
   reversesId: zId.nullable().optional(),
   note: z.string().max(300).optional(),

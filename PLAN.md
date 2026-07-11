@@ -42,7 +42,7 @@ Monorepo: NestJS API + Next.js web admin + Expo mobile + shared package.
 - [x] **M3 — Master data**: metals & purities, stone types (4Cs, carat/ratti,
       certificates IGI/GIA/SGL), HSN codes, configurable tax-rule matrix,
       customers + KYC, suppliers, karigars, metal-rate feed with manual fix.
-- [ ] **M4 — Inventory**: composite items (metal + stone + making
+- [x] **M4 — Inventory**: composite items (metal + stone + making
       components), dual-unit tracking (pieces + gross/net/stone weight +
       wastage), lots, append-only stock movements, inter-branch transfer.
 - [ ] **M5 — Tagging & barcode**: per-piece tags (barcode encodes stable item

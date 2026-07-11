@@ -22,13 +22,20 @@ the full milestone list and ARCHITECTURE.md for the system map.
   `prisma/seed.ts` seeds demo tenant + 2026 India GST defaults.
   Smoke-tested incl. RBAC denial.
 
+- **M4 — Inventory**: composite items (metal+stone components, 4Cs,
+  certificates; creation tx = item + components + PURCHASE_IN + audit),
+  lots, append-only movement ledger with once-only REVERSAL, direct-post
+  whitelist, inter-branch transfers (OUT/IN pair, status re-homing),
+  dual-unit /stock/summary. Domain movement-rules (5 tests). Smoke-tested
+  full cycle: create → adjust → reverse → transfer → receive.
+
 ## In progress
 
-- M4 — Inventory module.
+- M5 — Tagging & barcode.
 
 ## Resume point
 
-Build `apps/api/src/modules/inventory`: composite item creation (metal +
-stone components, nested tx, PURCHASE_IN movement), lots, append-only
-stock movements + reversal, inter-branch transfer (OUT/IN pair), stock
-summary. Domain: dual-unit stock math if needed. Then M5 tagging.
+Build `apps/api/src/modules/tagging`: Tag creation per piece (tagCode =
+itemCode#ordinal), label templates CRUD, batch label generation rendering
+barcodes server-side with bwip-js (Code128 default, DataMatrix option),
+PNG per tag + printable HTML sheet. Barcode payload = itemCode ONLY.

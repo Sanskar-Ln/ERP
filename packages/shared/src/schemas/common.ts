@@ -22,6 +22,9 @@ export const zBps = z.number().int().min(0).max(100_000);
 /** Gram weight string, up to 3 decimals: "12", "12.3", "12.345". */
 export const zGrams = z.string().regex(/^\d+(\.\d{1,3})?$/, 'expected grams with up to 3 decimals');
 
+/** Signed gram weight string — stock adjustments may subtract weight. */
+export const zGramsSigned = z.string().regex(/^-?\d+(\.\d{1,3})?$/, 'expected signed grams with up to 3 decimals');
+
 /** Carat weight string, up to 3 decimals. */
 export const zCarats = z.string().regex(/^\d+(\.\d{1,3})?$/, 'expected carats with up to 3 decimals');
 
