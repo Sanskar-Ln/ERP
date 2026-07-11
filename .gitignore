@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.next/
+out/
+.expo/
+*.tsbuildinfo
+
+# Env & secrets — never commit credentials
+.env
+.env.*
+!.env.example
+
+# Test / coverage
+coverage/
+
+# OS / editor
+.DS_Store
+*.log
+.idea/
+.vscode/
+
+# Prisma generated client lives in node_modules; migrations ARE committed

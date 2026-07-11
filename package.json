@@ -1,0 +1,16 @@
+{
+  "name": "jewellery-erp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant SaaS ERP for Indian jewellery & gems retailers (MVP)",
+  "scripts": {
+    "build": "pnpm -r --workspace-concurrency=1 run build",
+    "test": "pnpm -r run test",
+    "lint": "pnpm -r run lint",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
