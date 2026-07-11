@@ -1,0 +1,596 @@
+// Prisma schema — jewellery ERP data model.
+//
+// SYSTEM-WIDE RULES ENCODED HERE:
+// 1. Every primary key is `String @id` with NO database default: UUIDs are
+//    minted in the application (shared `newId()`), never by the DB. This is
+//    deliberate — it enables future offline clients to create rows locally.
+// 2. Every tenant-scoped model has `tenantId` (enforced additionally by the
+//    tenant-scoped Prisma client in src/platform/tenancy).
+// 3. Money columns are BigInt PAISE. Weight columns are Decimal grams
+//    (3 dp) or Decimal carats (3 dp). No floats.
+// 4. Financial rows (Document*, StockMovement, OldGoldExchange) are
+//    append-only: no updatedAt, corrections happen via supersede/reversal
+//    rows, and every financial mutation writes an AuditLog row.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ------------------------------------------------------------- enums
+
+enum Role {
+  OWNER
+  MANAGER
+  SALESPERSON
+  ACCOUNTANT
+}
+
+enum ComponentType {
+  METAL
+  STONE
+  MAKING
+  ITEM
+}
+
+enum MaterialForm {
+  JEWELLERY
+  BULLION
+  LOOSE_ROUGH
+  LOOSE_POLISHED
+  IMITATION
+  SERVICE
+}
+
+enum DocType {
+  TAX_INVOICE
+  ESTIMATE
+  DELIVERY_CHALLAN
+}
+
+enum DocStatus {
+  DRAFT
+  ISSUED
+  SUPERSEDED
+  CANCELLED
+  CONVERTED
+}
+
+enum GstSplit {
+  INTRA_STATE
+  INTER_STATE
+}
+
+enum TaxKind {
+  CGST
+  SGST
+  IGST
+}
+
+enum MovementType {
+  PURCHASE_IN
+  SALE_OUT
+  TRANSFER_OUT
+  TRANSFER_IN
+  ADJUSTMENT
+  EXCHANGE_IN
+  KARIGAR_ISSUE
+  KARIGAR_RECEIPT
+  REVERSAL
+}
+
+enum CertificateLab {
+  IGI
+  GIA
+  SGL
+  OTHER
+}
+
+enum BarcodeSymbology {
+  CODE128
+  DATAMATRIX
+}
+
+enum MakingChargeType {
+  FLAT
+  PER_GRAM
+  PERCENT_OF_METAL
+}
+
+enum RateSource {
+  FEED
+  MANUAL_FIX
+}
+
+enum TransferStatus {
+  IN_TRANSIT
+  RECEIVED
+  CANCELLED
+}
+
+enum ItemStatus {
+  IN_STOCK
+  SOLD
+  IN_TRANSIT
+  WITH_KARIGAR
+  SCRAPPED
+}
+
+// ------------------------------------------------------------- platform
+
+model Tenant {
+  id        String   @id
+  name      String
+  gstin     String?
+  stateCode String // 2-digit GST state code of the registered office
+  createdAt DateTime @default(now())
+
+  branches Branch[]
+  users    User[]
+}
+
+model Branch {
+  id        String  @id
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  code      String // short branch code, e.g. "HQ", "MUM1"
+  name      String
+  stateCode String // branch state drives CGST/SGST vs IGST on its invoices
+  gstin     String?
+  address   String?
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model User {
+  id           String  @id
+  tenantId     String
+  tenant       Tenant  @relation(fields: [tenantId], references: [id])
+  email        String
+  name         String
+  passwordHash String
+  role         Role
+  branchId     String?
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+}
+
+// Append-only audit trail. One row per (financial) mutation: who did what
+// to which entity, with before/after JSON snapshots for forensics.
+model AuditLog {
+  id          String   @id
+  tenantId    String
+  actorUserId String?
+  entity      String // model name, e.g. "Document"
+  entityId    String
+  action      String // e.g. "ISSUE", "CANCEL", "CONVERT", "RATE_FIX"
+  before      Json?
+  after       Json?
+  at          DateTime @default(now())
+
+  @@index([tenantId, entity, entityId])
+  @@index([tenantId, at])
+}
+
+// ------------------------------------------------------------- master data
+
+model Metal {
+  id       String @id
+  tenantId String
+  code     String // GOLD | SILVER | PLATINUM
+  name     String
+
+  purities Purity[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// A tradable purity of a metal. finenessPpt (parts per thousand) is the
+// number pricing math uses; karat/label are display.
+model Purity {
+  id          String @id
+  tenantId    String
+  metalId     String
+  metal       Metal  @relation(fields: [metalId], references: [id])
+  label       String // "22K", "18K", "925"
+  karat       Int?
+  finenessPpt Int // 916, 750, 925 …
+
+  @@unique([tenantId, metalId, label])
+  @@index([tenantId])
+}
+
+model StoneType {
+  id        String  @id
+  tenantId  String
+  code      String // DIAMOND, RUBY, EMERALD …
+  name      String
+  isDiamond Boolean // diamonds carry 4C attributes on components
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+model HsnCode {
+  id          String @id
+  tenantId    String
+  code        String // 4–8 digit HSN / SAC
+  description String
+
+  taxRules TaxRule[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+}
+
+// One row of the configurable tax matrix. Resolution key:
+// (componentType, form, isSetInJewellery, invoiceMode) + effective dating.
+// BUSINESS RULE: GST rates are tenant DATA (seeded with 2026 India defaults),
+// never hardcoded in the engine.
+model TaxRule {
+  id               String        @id
+  tenantId         String
+  componentType    ComponentType
+  form             MaterialForm
+  isSetInJewellery Boolean
+  invoiceMode      DocType
+  hsnCodeId        String?
+  hsnCode          HsnCode?      @relation(fields: [hsnCodeId], references: [id])
+  rateBps          Int // 300 = 3%, 25 = 0.25%
+  effectiveFrom    DateTime
+  effectiveTo      DateTime?
+  note             String?
+
+  @@index([tenantId, componentType, form, isSetInJewellery, invoiceMode])
+}
+
+model Customer {
+  id          String  @id
+  tenantId    String
+  name        String
+  phone       String
+  email       String?
+  addressLine String?
+  city        String?
+  stateCode   String // place-of-supply default for this customer
+  pincode     String?
+  gstin       String?
+  pan         String?
+  kycDocs     Json    @default("[]") // [{docType, docNumber}] — see zKycDoc
+  createdAt   DateTime @default(now())
+
+  @@index([tenantId, phone])
+  @@index([tenantId, name])
+}
+
+model Supplier {
+  id          String  @id
+  tenantId    String
+  name        String
+  phone       String?
+  gstin       String?
+  stateCode   String
+  addressLine String?
+
+  @@index([tenantId])
+}
+
+// Karigar = artisan/goldsmith who receives metal and returns finished goods.
+model Karigar {
+  id        String  @id
+  tenantId  String
+  name      String
+  phone     String?
+  specialty String?
+
+  @@index([tenantId])
+}
+
+// Metal rate rows are append-only: a new FEED tick or MANUAL_FIX row is
+// inserted; billing always reads the latest effective row ≤ now.
+// Rate convention: paise per 10 grams at the given purity (Indian bourse).
+model MetalRate {
+  id              String     @id
+  tenantId        String
+  metalId         String
+  purityId        String
+  ratePaisePer10g BigInt
+  source          RateSource
+  effectiveAt     DateTime
+  note            String?
+  createdByUserId String?
+  createdAt       DateTime   @default(now())
+
+  @@index([tenantId, metalId, purityId, effectiveAt(sort: Desc)])
+}
+
+// ------------------------------------------------------------- inventory
+
+// Composite inventory item: metal component(s) + stone component(s) + a
+// making-charge rule. Dual-unit: pieces AND weights are both first-class.
+model Item {
+  id                String           @id
+  tenantId          String
+  itemCode          String // stable code — THIS is what barcodes encode
+  name              String
+  description       String?
+  branchId          String
+  lotId             String?
+  lot               Lot?             @relation(fields: [lotId], references: [id])
+  hsnCodeId         String
+  pieces            Int              @default(1)
+  makingChargeType  MakingChargeType
+  makingChargeValue BigInt // FLAT: paise/pc, PER_GRAM: paise/g, PERCENT: bps
+  isStudded         Boolean          @default(false) // → composite 3% GST path
+  isPrecious        Boolean          @default(true) // false → imitation (18%)
+  status            ItemStatus       @default(IN_STOCK)
+  createdAt         DateTime         @default(now())
+
+  metalComponents ItemMetalComponent[]
+  stoneComponents ItemStoneComponent[]
+  tags            Tag[]
+
+  @@unique([tenantId, itemCode])
+  @@index([tenantId, branchId, status])
+}
+
+model ItemMetalComponent {
+  id           String  @id
+  tenantId     String
+  itemId       String
+  item         Item    @relation(fields: [itemId], references: [id])
+  metalId      String
+  purityId     String
+  grossWeightG Decimal @db.Decimal(12, 3)
+  netWeightG   Decimal @db.Decimal(12, 3)
+  wastageBps   Int     @default(0) // billed wastage allowance (800 = 8%)
+
+  @@index([tenantId, itemId])
+}
+
+model ItemStoneComponent {
+  id                String          @id
+  tenantId          String
+  itemId            String
+  item              Item            @relation(fields: [itemId], references: [id])
+  stoneTypeId       String
+  pieces            Int
+  weightCt          Decimal         @db.Decimal(10, 3)
+  weightRatti       Decimal?        @db.Decimal(10, 2)
+  cut               String? // 4C — diamonds only
+  color             String?
+  clarity           String?
+  certLab           CertificateLab?
+  certNo            String?
+  ratePaisePerCarat BigInt?
+  valuePaise        BigInt // stone value used in pricing
+
+  @@index([tenantId, itemId])
+}
+
+model Lot {
+  id         String   @id
+  tenantId   String
+  lotNo      String
+  supplierId String?
+  karigarId  String?
+  receivedAt DateTime
+  note       String?
+
+  items Item[]
+
+  @@unique([tenantId, lotNo])
+  @@index([tenantId])
+}
+
+// APPEND-ONLY stock ledger. Rows are never updated or deleted; a mistake is
+// corrected by inserting a REVERSAL row with reversesId → original.
+model StockMovement {
+  id            String       @id
+  tenantId      String
+  itemId        String
+  movementType  MovementType
+  branchId      String
+  pieces        Int // signed: +in / −out
+  grossWeightG  Decimal      @db.Decimal(12, 3) // signed like pieces
+  refDocumentId String? // billing document that caused this
+  reversesId    String?      @unique // original movement being reversed
+  note          String?
+  actorUserId   String?
+  at            DateTime     @default(now())
+
+  @@index([tenantId, itemId, at])
+  @@index([tenantId, branchId, at])
+}
+
+model BranchTransfer {
+  id              String         @id
+  tenantId        String
+  fromBranchId    String
+  toBranchId      String
+  status          TransferStatus @default(IN_TRANSIT)
+  note            String?
+  createdByUserId String?
+  createdAt       DateTime       @default(now())
+  receivedAt      DateTime?
+
+  items BranchTransferItem[]
+
+  @@index([tenantId, status])
+}
+
+model BranchTransferItem {
+  id         String         @id
+  tenantId   String
+  transferId String
+  transfer   BranchTransfer @relation(fields: [transferId], references: [id])
+  itemId     String
+
+  @@index([tenantId, transferId])
+}
+
+// ------------------------------------------------------------- tagging
+
+// One tag per physical piece. BUSINESS RULE: barcode payload = tagCode,
+// which embeds only the stable item code + piece ordinal — never price —
+// so daily repricing NEVER requires reprinting.
+model Tag {
+  id        String           @id
+  tenantId  String
+  itemId    String
+  item      Item             @relation(fields: [itemId], references: [id])
+  tagCode   String // e.g. "RING-0001#1"
+  symbology BarcodeSymbology @default(CODE128)
+  isActive  Boolean          @default(true)
+  printedAt DateTime?
+  createdAt DateTime         @default(now())
+
+  @@unique([tenantId, tagCode])
+  @@index([tenantId, itemId])
+}
+
+model LabelTemplate {
+  id        String           @id
+  tenantId  String
+  name      String
+  widthMm   Int
+  heightMm  Int
+  symbology BarcodeSymbology @default(CODE128)
+  fields    Json // ordered field list, see zCreateLabelTemplate
+  isDefault Boolean          @default(false)
+
+  @@unique([tenantId, name])
+}
+
+model LabelBatch {
+  id              String   @id
+  tenantId        String
+  templateId      String
+  tagIds          Json // snapshot of tag ids rendered in this batch
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId, createdAt])
+}
+
+// ------------------------------------------------------------- billing
+
+// Human-facing document numbering (INV-2026-000123). Identity stays UUID;
+// this is ONLY a per-tenant, per-series display counter, incremented inside
+// the issue transaction (SELECT … FOR UPDATE semantics via updateMany guard).
+model NumberSeries {
+  id         String @id
+  tenantId   String
+  seriesCode String // e.g. "INV-2026", "EST-2026", "DC-2026"
+  nextNumber Int    @default(1)
+
+  @@unique([tenantId, seriesCode])
+}
+
+// IMMUTABLE financial document (Tax Invoice / Estimate / Delivery Challan).
+// Never updated after ISSUED except status transitions to SUPERSEDED /
+// CANCELLED / CONVERTED (the financial content never changes; each
+// transition writes an AuditLog row and, where applicable, a successor
+// document linked via convertedFromId / supersedesId).
+model Document {
+  id                      String    @id
+  tenantId                String
+  docType                 DocType
+  docNumber               String
+  status                  DocStatus @default(ISSUED)
+  branchId                String
+  customerId              String
+  issuedAt                DateTime  @default(now())
+  sellerStateCode         String // branch state at issue time (snapshot)
+  placeOfSupplyStateCode  String
+  gstSplit                GstSplit
+  subtotalPaise           BigInt // sum of line gross values before discounts
+  discountPaise           BigInt // cart-level discount prorated in lines
+  exchangeValuePaise      BigInt // old-gold value credited (GST on addition only)
+  taxableValuePaise       BigInt
+  totalTaxPaise           BigInt
+  grandTotalPaise         BigInt
+  note                    String?
+  cancelReason            String?
+  convertedFromId         String?   @unique // estimate this invoice came from
+  supersedesId            String?   @unique // document this one corrects
+  createdByUserId         String?
+
+  lines     DocumentLine[]
+  taxLines  DocumentTaxLine[]
+  exchanges OldGoldExchange[]
+
+  @@unique([tenantId, docType, docNumber])
+  @@index([tenantId, customerId, issuedAt])
+  @@index([tenantId, docType, issuedAt])
+}
+
+// One sold line. `snapshot` freezes every pricing input (weights, rates,
+// wastage, making rule) at issue time so the document stays reproducible
+// even after masters change — part of the immutability guarantee.
+model DocumentLine {
+  id                  String   @id
+  tenantId            String
+  documentId          String
+  document            Document @relation(fields: [documentId], references: [id])
+  lineNo              Int
+  itemId              String?
+  description         String
+  hsnCode             String // snapshot of HSN at issue time
+  pieces              Int
+  metalValuePaise     BigInt
+  stoneValuePaise     BigInt
+  makingPaise         BigInt
+  makingDiscountPaise BigInt
+  lineDiscountPaise   BigInt // prorated share of cart discount
+  grossPaise          BigInt // metal + stone + making − discounts
+  taxablePaise        BigInt
+  snapshot            Json?
+
+  @@unique([documentId, lineNo])
+  @@index([tenantId, documentId])
+}
+
+// One row per (kind, rate) bucket, e.g. CGST 1.5% / SGST 1.5% / IGST 3%.
+model DocumentTaxLine {
+  id           String   @id
+  tenantId     String
+  documentId   String
+  document     Document @relation(fields: [documentId], references: [id])
+  kind         TaxKind
+  label        String // "CGST 1.5%"
+  rateBps      Int
+  taxablePaise BigInt
+  taxPaise     BigInt
+
+  @@index([tenantId, documentId])
+}
+
+// Old-gold tendered against a purchase. BUSINESS RULE: GST is charged on the
+// value addition only (new value − exchange value); the exchange row keeps
+// the assessed weight/purity/rate for audit.
+model OldGoldExchange {
+  id              String   @id
+  tenantId        String
+  documentId      String
+  document        Document @relation(fields: [documentId], references: [id])
+  metalId         String
+  purityId        String
+  grossWeightG    Decimal  @db.Decimal(12, 3)
+  netWeightG      Decimal  @db.Decimal(12, 3)
+  ratePaisePer10g BigInt
+  valuePaise      BigInt // netWeight × rate — credited to the customer
+  note            String?
+  createdAt       DateTime @default(now())
+
+  @@index([tenantId, documentId])
+}
