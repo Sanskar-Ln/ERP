@@ -6,7 +6,7 @@
  * documents, and drill into one (tax lines, convert, cancel).
  */
 import { useEffect, useState } from 'react';
-import { api, inr } from '@/lib/api';
+import { api, apiBlob, inr, session } from '@/lib/api';
 
 interface Customer {
   id: string;
@@ -41,6 +41,56 @@ interface DocDetail extends Doc {
   taxableValuePaise: number;
   lines: { lineNo: number; description: string; hsnCode: string; grossPaise: number; taxablePaise: number }[];
   taxLines: { label: string; taxablePaise: number; taxPaise: number }[];
+}
+
+/**
+ * CSV report downloads for the manager/accountant: the period sales
+ * register and the GST summary. Files are JWT-protected, so they are
+ * fetched as blobs and saved via a temporary anchor. Hidden for
+ * salesperson logins (the API enforces the same RBAC anyway).
+ */
+function ReportDownloads() {
+  const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    .toISOString()
+    .slice(0, 10);
+  const today = new Date().toISOString().slice(0, 10);
+  const [from, setFrom] = useState(firstOfMonth);
+  const [to, setTo] = useState(today);
+  const [err, setErr] = useState('');
+  const role = session.user()?.role;
+  if (role === 'SALESPERSON') return null;
+
+  async function download(kind: 'documents' | 'gst-summary') {
+    setErr('');
+    try {
+      const blob = await apiBlob(`/reports/${kind}.csv?from=${from}&to=${to}T23:59:59Z`);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${kind}-${from}-to-${to}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'download failed');
+    }
+  }
+
+  return (
+    <section className="card">
+      <h2 className="mb-3 font-medium">Reports (CSV)</h2>
+      <div className="flex flex-wrap items-center gap-2">
+        <input className="input w-40" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
+        <span className="text-sm text-neutral-400">to</span>
+        <input className="input w-40" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        <button className="btn" onClick={() => void download('documents')}>Bills register</button>
+        <button className="btn-secondary" onClick={() => void download('gst-summary')}>GST summary</button>
+        {err && <span className="text-sm text-red-600">{err}</span>}
+      </div>
+      <p className="mt-2 text-xs text-neutral-500">
+        Bills register: one row per document with taxes split CGST/SGST/IGST. GST summary: totals per rate
+        bucket over issued tax invoices — the starting point for filing.
+      </p>
+    </section>
+  );
 }
 
 export default function BillingPage() {
@@ -192,6 +242,8 @@ export default function BillingPage() {
           <button className="btn-secondary" disabled={!customerId || cartItemIds.length === 0} onClick={() => void issue('DELIVERY_CHALLAN')}>Delivery Challan</button>
         </div>
       </section>
+
+      <ReportDownloads />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card">

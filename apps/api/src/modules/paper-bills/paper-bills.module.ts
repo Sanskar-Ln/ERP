@@ -9,8 +9,10 @@
  */
 import { Module } from '@nestjs/common';
 import { PaperBillsController } from './paper-bills.controller';
+import { OcrService } from './ocr.service';
 
 @Module({
   controllers: [PaperBillsController],
+  providers: [OcrService],
 })
 export class PaperBillsModule {}

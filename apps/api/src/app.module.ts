@@ -10,6 +10,7 @@ import { InventoryModule } from './modules/inventory/inventory.module';
 import { TaggingModule } from './modules/tagging/tagging.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { PaperBillsModule } from './modules/paper-bills/paper-bills.module';
+import { ReportsModule } from './modules/reports/reports.module';
 
 /** Liveness probe — public, no DB touch. */
 @Controller('health')
@@ -22,7 +23,15 @@ class HealthController {
 }
 
 @Module({
-  imports: [PlatformModule, MasterDataModule, InventoryModule, TaggingModule, BillingModule, PaperBillsModule],
+  imports: [
+    PlatformModule,
+    MasterDataModule,
+    InventoryModule,
+    TaggingModule,
+    BillingModule,
+    PaperBillsModule,
+    ReportsModule,
+  ],
   controllers: [HealthController],
 })
 export class AppModule {}

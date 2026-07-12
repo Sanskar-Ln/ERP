@@ -98,7 +98,7 @@ pnpm -r test && pnpm -r typecheck && pnpm -r run build
 
 ## Test coverage
 
-79 unit tests, all green, focused on the money-bearing logic:
+86 unit tests, all green, focused on the money-bearing logic:
 
 | Area | Tests |
 |------|-------|
@@ -110,6 +110,7 @@ pnpm -r test && pnpm -r typecheck && pnpm -r run build
 | GST engine (all 7 rules + reconciliation) | 12 |
 | movement rules (signs, reversal, float guard) | 5 |
 | tag codes (round-trip, price-free assertion) | 4 |
+| paper-bill OCR text parsing (fields, noise, fallbacks) | 7 |
 
 Every milestone was additionally smoke-tested end-to-end against local
 PostgreSQL (register→login→RBAC, item→adjust→reverse→transfer→receive,
@@ -131,8 +132,9 @@ inter-state IGST), and the web admin was driven in headless Chromium.
   (UUIDs, append-only) but not implemented. Camera barcode scanning
   (Code128/DataMatrix via expo-camera) IS implemented alongside
   keyboard-wedge scanners.
-- Uploaded paper bills are stored and viewable but not OCR-parsed —
-  their contents are not extracted into structured data.
+- Paper-bill OCR (tesseract.js, offline tessdata) extracts bill number,
+  date, amounts/total, weights, rate and phones as a reviewed draft;
+  PDFs are not rasterized (images only) and handwriting accuracy varies.
 - No e2e/integration test harness (unit + scripted smoke only); no CI
   pipeline config in-repo.
 - Single warehouse per branch; no per-karigar metal reconciliation

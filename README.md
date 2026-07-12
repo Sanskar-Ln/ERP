@@ -70,7 +70,14 @@ If the API runs elsewhere, set `NEXT_PUBLIC_API_URL` first.
 The **Customers** page shows the recurring-customer view: pick a customer
 to see ALL their system documents plus their uploaded **paper bills**
 (photo/scan of old bills, JPEG/PNG/WebP/PDF up to 10 MB), with upload and
-in-browser viewing.
+in-browser viewing. A **read (OCR)** button reads an uploaded bill photo
+server-side and shows the recognized fields (bill no, date, total,
+weights, rate, phone) as a draft to copy into a new online bill.
+
+The **Billing** page has **CSV report downloads** for managers/
+accountants: the bills register (one row per document, taxes split
+CGST/SGST/IGST) and the GST summary (totals per rate bucket) for any
+date range.
 
 ### 5. Mobile (`apps/mobile`)
 

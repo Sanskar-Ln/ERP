@@ -290,6 +290,11 @@ model PaperBill {
   storagePath      String // server-side file name under UPLOAD_DIR (uuid + ext)
   note             String? // e.g. "old bill 2019, gold chain repair"
   billDate         DateTime? // date written on the paper bill, if known
+  // OCR extraction result: { text, fields: { billNo?, billDate?, totalPaise?,
+  // amountsPaise[], weightsG[], ratePaisePer10g?, phones[] } } — best-effort
+  // reading of the paper bill to help staff key in the online bill faster.
+  extracted        Json?
+  extractedAt      DateTime?
   uploadedByUserId String?
   uploadedAt       DateTime @default(now())
 

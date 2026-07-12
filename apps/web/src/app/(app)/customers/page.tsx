@@ -32,6 +32,15 @@ interface Doc {
   issuedAt: string;
   grandTotalPaise: number;
 }
+interface ExtractedFields {
+  billNo?: string;
+  billDate?: string;
+  totalPaise?: number;
+  amountsPaise: number[];
+  weightsG: string[];
+  ratePaisePer10g?: number;
+  phones: string[];
+}
 interface PaperBill {
   id: string;
   fileName: string;
@@ -40,6 +49,8 @@ interface PaperBill {
   note: string | null;
   billDate: string | null;
   uploadedAt: string;
+  extracted: { text: string; fields: ExtractedFields } | null;
+  extractedAt: string | null;
 }
 
 export default function CustomersPage() {
@@ -106,6 +117,27 @@ export default function CustomersPage() {
   async function view(bill: PaperBill) {
     const blob = await apiBlob(`/paper-bills/${bill.id}/file`);
     window.open(URL.createObjectURL(blob), '_blank');
+  }
+
+  /**
+   * OCR the paper bill server-side and show the recognized fields.
+   * The result is a DRAFT for the human to copy into the online bill —
+   * old bills are often handwritten, so nothing is auto-committed.
+   */
+  const [reading, setReading] = useState<string | null>(null);
+  const [showExtract, setShowExtract] = useState<PaperBill | null>(null);
+  async function readBill(bill: PaperBill) {
+    setReading(bill.id);
+    setMsg('');
+    try {
+      const updated = await api<PaperBill>('POST', `/paper-bills/${bill.id}/extract`);
+      setShowExtract(updated);
+      if (selected) setBills(await api<PaperBill[]>('GET', `/customers/${selected.id}/paper-bills`));
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'OCR failed');
+    } finally {
+      setReading(null);
+    }
   }
 
   return (
@@ -196,12 +228,46 @@ export default function CustomersPage() {
                         {(b.sizeBytes / 1024).toFixed(0)} KB · {new Date(b.uploadedAt).toLocaleDateString()}
                       </td>
                       <td className="td">
-                        <button className="btn-secondary" onClick={() => void view(b)}>view</button>
+                        <div className="flex gap-1">
+                          <button className="btn-secondary" onClick={() => void view(b)}>view</button>
+                          {b.mimeType.startsWith('image/') && (
+                            <button className="btn-secondary" disabled={reading === b.id} onClick={() => void readBill(b)}>
+                              {reading === b.id ? 'reading…' : b.extracted ? 're-read' : 'read (OCR)'}
+                            </button>
+                          )}
+                          {b.extracted && (
+                            <button className="btn-secondary" onClick={() => setShowExtract(b)}>fields</button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+
+              {showExtract?.extracted && (
+                <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="font-medium">Read from “{showExtract.fileName}” — review before using</span>
+                    <button className="text-xs text-neutral-500" onClick={() => setShowExtract(null)}>close</button>
+                  </div>
+                  <dl className="grid grid-cols-2 gap-x-6 gap-y-1 md:grid-cols-3">
+                    <div><dt className="text-xs text-neutral-500">Bill no</dt><dd>{showExtract.extracted.fields.billNo ?? '—'}</dd></div>
+                    <div><dt className="text-xs text-neutral-500">Bill date</dt><dd>{showExtract.extracted.fields.billDate ?? '—'}</dd></div>
+                    <div><dt className="text-xs text-neutral-500">Total</dt><dd>{showExtract.extracted.fields.totalPaise != null ? inr(showExtract.extracted.fields.totalPaise) : '—'}</dd></div>
+                    <div><dt className="text-xs text-neutral-500">Rate / 10 g</dt><dd>{showExtract.extracted.fields.ratePaisePer10g != null ? inr(showExtract.extracted.fields.ratePaisePer10g) : '—'}</dd></div>
+                    <div><dt className="text-xs text-neutral-500">Weights (g)</dt><dd>{showExtract.extracted.fields.weightsG.join(', ') || '—'}</dd></div>
+                    <div><dt className="text-xs text-neutral-500">Phones</dt><dd>{showExtract.extracted.fields.phones.join(', ') || '—'}</dd></div>
+                  </dl>
+                  <details className="mt-2">
+                    <summary className="cursor-pointer text-xs text-neutral-500">full recognized text</summary>
+                    <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap text-xs text-neutral-600">{showExtract.extracted.text}</pre>
+                  </details>
+                  <p className="mt-2 text-xs text-neutral-500">
+                    OCR of old bills is best-effort — copy what's correct into the new bill on the Billing page.
+                  </p>
+                </div>
+              )}
             </section>
           </div>
         ) : (

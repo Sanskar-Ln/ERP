@@ -35,6 +35,8 @@ import { CurrentUser } from '../../platform/auth/auth.decorators';
 import { TenancyService } from '../../platform/tenancy/tenancy.service';
 import { AuditService } from '../../platform/audit/audit.service';
 import { ZodPipe } from '../../platform/validation/zod.pipe';
+import { OcrService } from './ocr.service';
+import { parseBillText } from '../../domain/paper-bills/parse-bill-text';
 
 /** Where uploaded files live. Created eagerly so multer never races it. */
 const UPLOAD_DIR = process.env.UPLOAD_DIR ?? join(process.cwd(), 'uploads');
@@ -56,6 +58,7 @@ export class PaperBillsController {
   constructor(
     private readonly tenancy: TenancyService,
     private readonly audit: AuditService,
+    private readonly ocr: OcrService,
   ) {}
 
   /** Upload one paper bill for a customer (multipart field name: `file`). */
@@ -137,6 +140,46 @@ export class PaperBillsController {
       where: { customerId },
       orderBy: { uploadedAt: 'desc' },
     });
+  }
+
+  /**
+   * Read the paper bill with OCR and extract structured fields
+   * (bill number, date, amounts + guessed total, weights, per-10g rate,
+   * phones) so staff can key in the online bill faster.
+   *
+   * IMPORTANT BUSINESS STANCE: the extraction is a DRAFT for a human to
+   * review — old bills are often handwritten and OCR is lossy — so the
+   * result is stored on the PaperBill (`extracted`, `extractedAt`) and
+   * shown in the UI, never auto-posted into billing. Re-running replaces
+   * the previous extraction (audited each time). Images only; PDFs need
+   * rasterizing, which is out of MVP scope.
+   */
+  @Post('paper-bills/:id/extract')
+  async extract(@CurrentUser() user: JwtClaims, @Param('id', new ZodPipe(zId)) id: string) {
+    const db = this.tenancy.client(user.tenantId);
+    const row = await db.paperBill.findUniqueOrThrow({ where: { id } });
+    if (!row.mimeType.startsWith('image/')) {
+      throw new BadRequestException('OCR supports images only — upload JPEG/PNG/WebP for extraction');
+    }
+    const path = join(UPLOAD_DIR, row.storagePath);
+    if (!existsSync(path)) throw new BadRequestException('file missing from storage');
+
+    const text = await this.ocr.recognize(path);
+    const fields = parseBillText(text); // pure domain parsing
+    const extracted = { text, fields };
+
+    const updated = await db.paperBill.update({
+      where: { id },
+      data: { extracted, extractedAt: new Date() },
+    });
+    await this.audit.log(db, {
+      actorUserId: user.sub,
+      entity: 'PaperBill',
+      entityId: id,
+      action: 'EXTRACT',
+      after: { fields },
+    });
+    return updated;
   }
 
   /** Stream the stored file. Served only after a tenant-scoped row read. */

@@ -90,6 +90,18 @@ the full milestone list and ARCHITECTURE.md for the system map.
   stream/type-reject smoke, second-org registration, headless-Chromium
   customers page, mobile tsc + expo export.
 
+- **Post-MVP: paper-bill OCR + manager reports** — (1) `POST
+  /paper-bills/:id/extract`: tesseract.js OCR (fully offline via
+  npm-packaged tessdata) + pure `parse-bill-text` domain parser (7 tests)
+  extracting bill no / date / amounts+total / weights / per-10g rate /
+  phones; stored on the row, audited, surfaced in the web Customers page
+  as a reviewed draft for keying in online bills. (2) `modules/reports`:
+  documents.csv (per-bill register with CGST/SGST/IGST split) and
+  gst-summary.csv (per-bucket totals over issued tax invoices),
+  MANAGER/ACCOUNTANT-only, with date-range download buttons on the web
+  Billing page. E2E-verified: photo → OCR fields (bill 1247, ₹44,500) in
+  the browser, CSV download, salesperson 403.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**
