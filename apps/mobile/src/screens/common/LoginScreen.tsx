@@ -1,10 +1,14 @@
-/** Login — POST /auth/login, keep the JWT in memory (online-only MVP). */
+/**
+ * Login (common to both views) — POST /auth/login, keep JWT + user in
+ * memory. The returned role decides which view App.tsx mounts:
+ * OWNER/MANAGER → manager view, otherwise → sales (counter) view.
+ */
 import React, { useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { api, setToken } from '../api';
+import { api, session, ui, type SessionUser } from '../../lib/api';
 
 export default function LoginScreen({ onLogin }: { onLogin: () => void }): React.JSX.Element {
-  const [email, setEmail] = useState('sales@demo.in');
+  const [email, setEmail] = useState('manager@demo.in');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -13,8 +17,8 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }): React
     setBusy(true);
     setError('');
     try {
-      const res = await api<{ accessToken: string }>('POST', '/auth/login', { email, password });
-      setToken(res.accessToken);
+      const res = await api<{ accessToken: string; user: SessionUser }>('POST', '/auth/login', { email, password });
+      session.set(res.accessToken, res.user);
       onLogin();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'login failed');
@@ -39,15 +43,17 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }): React
       <TouchableOpacity style={styles.btn} onPress={() => void submit()} disabled={busy}>
         <Text style={styles.btnText}>{busy ? 'Signing in…' : 'Sign in'}</Text>
       </TouchableOpacity>
+      <Text style={styles.hint}>manager view: manager@demo.in · counter view: sales@demo.in (demo1234)</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: { flex: 1, justifyContent: 'center', padding: 24, gap: 10 },
-  title: { fontSize: 22, fontWeight: '700', color: '#b45309', marginBottom: 12, textAlign: 'center' },
+  title: { fontSize: 22, fontWeight: '700', color: ui.amber, marginBottom: 12, textAlign: 'center' },
   input: { borderWidth: 1, borderColor: '#d6d3d1', borderRadius: 6, padding: 10, backgroundColor: '#fff' },
-  error: { color: '#dc2626', fontSize: 13 },
-  btn: { backgroundColor: '#b45309', borderRadius: 6, padding: 12, alignItems: 'center' },
+  error: { color: ui.red, fontSize: 13 },
+  btn: { backgroundColor: ui.amber, borderRadius: 6, padding: 12, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '600' },
+  hint: { fontSize: 11, color: ui.faint, textAlign: 'center' },
 });

@@ -1,7 +1,7 @@
 /**
- * Mobile API client — thin fetch wrapper, JWT kept in memory (online-only
- * MVP; no secure storage dependency yet). Money is integer paise
- * everywhere, matching @erp/shared conventions.
+ * Mobile API client — thin fetch wrapper, JWT + user kept in memory
+ * (online-only MVP; no secure storage dependency yet). Money is integer
+ * paise everywhere, matching @erp/shared conventions.
  *
  * NOTE for device testing: replace `apiUrl` in app.json `extra` with the
  * machine's LAN address (e.g. http://192.168.1.10:3001/api/v1) — an
@@ -12,12 +12,33 @@ import Constants from 'expo-constants';
 const API_URL: string =
   (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ?? 'http://localhost:3001/api/v1';
 
-let token: string | null = null;
+/** The logged-in user as returned by POST /auth/login. */
+export interface SessionUser {
+  id: string;
+  email: string;
+  name: string;
+  role: 'OWNER' | 'MANAGER' | 'SALESPERSON' | 'ACCOUNTANT';
+  tenantId: string;
+  branchId: string | null;
+}
 
-export const setToken = (t: string | null): void => {
-  token = t;
+let token: string | null = null;
+let user: SessionUser | null = null;
+
+export const session = {
+  set(t: string, u: SessionUser): void {
+    token = t;
+    user = u;
+  },
+  clear(): void {
+    token = null;
+    user = null;
+  },
+  user: (): SessionUser | null => user,
+  authed: (): boolean => token !== null,
+  /** Managers and owners get the admin view; everyone else the counter view. */
+  isManager: (): boolean => user?.role === 'OWNER' || user?.role === 'MANAGER',
 };
-export const hasToken = (): boolean => token !== null;
 
 /** JSON request against the ERP API; throws Error with server message. */
 export async function api<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
@@ -49,3 +70,15 @@ export function inr(paise: number): string {
   const grouped = rest ? `${rest.replace(/\B(?=(\d{2})+(?!\d))/g, ',')},${last3}` : last3;
   return `${sign}₹${grouped}.${p}`;
 }
+
+/** Shared styling tokens so every screen stays visually consistent. */
+export const ui = {
+  amber: '#b45309',
+  border: '#e7e5e4',
+  muted: '#78716c',
+  faint: '#a8a29e',
+  text: '#44403c',
+  bg: '#fafaf9',
+  red: '#dc2626',
+  green: '#15803d',
+} as const;

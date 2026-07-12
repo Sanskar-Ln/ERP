@@ -65,6 +65,17 @@ the full milestone list and ARCHITECTURE.md for the system map.
   79-test coverage table, known gaps), root README, architecture refresh.
   Full workspace verification: builds, tests, typechecks all green.
 
+- **Post-MVP: mobile manager view** — the mobile app now has TWO
+  role-based views (role from login decides): manager view
+  (`screens/manager/`: Dashboard = rates + stock position + recent docs,
+  Stock = create item / adjustment / receive transfers, Billing = full
+  document engine incl. convert & cancel, Rates) and the sales counter
+  view (`screens/sales/`: Rates, scan-to-price Lookup, Estimate). Shared
+  screens in `screens/common/`, client in `lib/` — folders strictly
+  separated, no cross-view imports. RBAC stays server-side (verified:
+  manager can post adjustments, salesperson gets 403). Root README
+  rewritten as a step-by-step "run everything" guide.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

@@ -1,7 +1,7 @@
-/** Board rates — latest rate per (metal, purity), pull-to-refresh. */
+/** Board rates (common to both views) — latest per (metal, purity). */
 import React, { useCallback, useEffect, useState } from 'react';
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { api, inr } from '../api';
+import { api, inr, ui } from '../../lib/api';
 
 interface Metal {
   id: string;
@@ -72,8 +72,8 @@ export default function RatesScreen(): React.JSX.Element {
 const styles = StyleSheet.create({
   list: { padding: 16, gap: 10 },
   h1: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 14, borderWidth: 1, borderColor: '#e7e5e4' },
-  cardTitle: { fontSize: 13, color: '#78716c' },
+  card: { backgroundColor: '#fff', borderRadius: 8, padding: 14, borderWidth: 1, borderColor: ui.border },
+  cardTitle: { fontSize: 13, color: ui.muted },
   cardRate: { fontSize: 20, fontWeight: '700' },
-  cardMeta: { fontSize: 10, color: '#a8a29e' },
+  cardMeta: { fontSize: 10, color: ui.faint },
 });

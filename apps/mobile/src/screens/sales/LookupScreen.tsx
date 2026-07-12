@@ -6,7 +6,7 @@
  */
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { api, inr } from '../api';
+import { api, inr } from '../../lib/api';
 
 interface Item {
   id: string;
