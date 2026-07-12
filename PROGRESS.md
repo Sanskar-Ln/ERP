@@ -46,16 +46,22 @@ the full milestone list and ARCHITECTURE.md for the system map.
   all single-tx with audit rows. Smoke-tested: est→convert→cancel,
   studded+exchange (tax on addition only), inter-state IGST.
 
+- **M7 — Web admin**: Next.js 15 App Router + Tailwind v4. Login (JWT),
+  guarded sidebar shell, dashboard (board rates + stock position),
+  masters (rate fix, customers, tax matrix), inventory (create item,
+  ledger), tagging (tags, barcode preview, printable label sheets),
+  billing (cart → any doc type, old-gold input, detail with tax lines,
+  convert/cancel). `next build` clean; verified in headless Chromium
+  (login → dashboard → billing → masters, zero page errors).
+
 ## In progress
 
-- M7 — Web admin (Next.js).
+- M8 — Mobile (Expo).
 
 ## Resume point
 
-Scaffold `apps/web`: Next.js App Router + Tailwind, login page (JWT in
-localStorage + fetch wrapper), sidebar layout, pages: dashboard (rates,
-stock summary), masters (metals/purities, tax rules, customers), inventory
-(items list/create, movements, transfers), tagging (tags, label batches →
-open render HTML), billing (cart → issue any doc type, documents list,
-detail with tax lines, convert/cancel buttons). Uses @erp/shared zod
-schemas for forms. Then M8 mobile.
+Scaffold `apps/mobile`: Expo (TS) thin online-only client — app.json,
+App.tsx with simple screen switcher (no nav lib to keep deps light):
+login (JWT via fetch to API), rates screen, stock lookup by item code
+(scan-entry text field), estimate creation (customer + item codes).
+Reuse @erp/shared types. Ensure `tsc --noEmit` passes. Then M9 REPORT.md.

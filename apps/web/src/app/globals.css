@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+/* Small shared primitives so page code stays lean. */
+@layer components {
+  .btn {
+    @apply rounded bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100;
+  }
+  .input {
+    @apply w-full rounded border border-neutral-300 px-2 py-1.5 text-sm focus:border-amber-600 focus:outline-none;
+  }
+  .card {
+    @apply rounded-lg border border-neutral-200 bg-white p-4 shadow-sm;
+  }
+  .th {
+    @apply border-b border-neutral-200 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500;
+  }
+  .td {
+    @apply border-b border-neutral-100 px-3 py-2 text-sm;
+  }
+}
