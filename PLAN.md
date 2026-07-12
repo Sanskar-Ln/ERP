@@ -56,7 +56,7 @@ Monorepo: NestJS API + Next.js web admin + Expo mobile + shared package.
       old-gold exchange with GST on value addition only.
 - [x] **M7 — Web admin** (Next.js): auth, master data, inventory, tagging,
       billing screens.
-- [ ] **M8 — Mobile** (Expo): thin online-only client — login, catalogue/stock
+- [x] **M8 — Mobile** (Expo): thin online-only client — login, catalogue/stock
       lookup, rate view, estimate creation.
 - [ ] **M9 — REPORT.md**: final summary, run instructions, coverage, gaps.
 

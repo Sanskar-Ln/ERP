@@ -33,6 +33,7 @@ import { AuditService } from '../../platform/audit/audit.service';
 import { ZodPipe } from '../../platform/validation/zod.pipe';
 import { ApiZodBody } from '../../platform/validation/openapi';
 import { signedQuantities } from '../../domain/inventory/movement-rules';
+import { priceItem } from '../../domain/pricing/price-item';
 
 const zItemQuery = z.object({
   branchId: zId.optional(),
@@ -195,6 +196,47 @@ export class ItemsController {
       where: { id },
       include: { metalComponents: true, stoneComponents: true, tags: true, lot: true },
     });
+  }
+
+  /**
+   * Live price preview at today's board rate.
+   *
+   * This endpoint is why barcodes can stay price-free (see tagging):
+   * a scan resolves the item, then THIS computes the price of the moment
+   * from the latest effective rate — repricing never touches the label.
+   * Pure pricing math lives in domain/pricing/price-item.ts.
+   */
+  @Get('items/:id/price')
+  async price(@CurrentUser() user: JwtClaims, @Param('id', new ZodPipe(zId)) id: string) {
+    const db = this.tenancy.client(user.tenantId);
+    const item = await db.item.findUniqueOrThrow({
+      where: { id },
+      include: { metalComponents: true, stoneComponents: true },
+    });
+    const now = new Date();
+    const metalInputs = [];
+    const ratesUsed = [];
+    for (const mc of item.metalComponents) {
+      const rate = await db.metalRate.findFirst({
+        where: { metalId: mc.metalId, purityId: mc.purityId, effectiveAt: { lte: now } },
+        orderBy: { effectiveAt: 'desc' },
+      });
+      if (!rate) throw new BadRequestException('no board rate fixed for a component purity');
+      metalInputs.push({
+        netWeightMg: gramsToMg(mc.netWeightG.toFixed(3)),
+        wastageBps: mc.wastageBps,
+        ratePaisePer10g: Number(rate.ratePaisePer10g),
+      });
+      ratesUsed.push({ purityId: mc.purityId, ratePaisePer10g: Number(rate.ratePaisePer10g), source: rate.source });
+    }
+    const pricing = priceItem({
+      pieces: item.pieces,
+      metalComponents: metalInputs,
+      stoneValuesPaise: item.stoneComponents.map((sc) => Number(sc.valuePaise)),
+      making: { type: item.makingChargeType as never, value: Number(item.makingChargeValue) },
+      makingDiscountPaise: 0,
+    });
+    return { itemCode: item.itemCode, name: item.name, pricedAt: now.toISOString(), ratesUsed, ...pricing };
   }
 
   // ------------------------------------------------------------ lots

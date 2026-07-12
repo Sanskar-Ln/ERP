@@ -54,14 +54,20 @@ the full milestone list and ARCHITECTURE.md for the system map.
   convert/cancel). `next build` clean; verified in headless Chromium
   (login → dashboard → billing → masters, zero page errors).
 
+- **M8 — Mobile (Expo)**: thin online-only client, dependency-light
+  (no nav lib; local index.ts entry for pnpm compat). Screens: login,
+  board rates (pull-to-refresh), stock lookup with LIVE price at today's
+  rate via new `/items/:id/price` endpoint (the price-free-barcode story),
+  estimate creation at the counter. Verified: `tsc --noEmit` + full
+  `expo export` Metro→Hermes bundle.
+
 ## In progress
 
-- M8 — Mobile (Expo).
+- M9 — REPORT.md.
 
 ## Resume point
 
-Scaffold `apps/mobile`: Expo (TS) thin online-only client — app.json,
-App.tsx with simple screen switcher (no nav lib to keep deps light):
-login (JWT via fetch to API), rates screen, stock lookup by item code
-(scan-entry text field), estimate creation (customer + item codes).
-Reuse @erp/shared types. Ensure `tsc --noEmit` passes. Then M9 REPORT.md.
+Write REPORT.md (what was built, architecture decisions, how to run each
+app, test coverage, known gaps), refresh ARCHITECTURE.md if needed, root
+README.md; run the full workspace build+tests one last time; commit and
+push. MVP complete after that.

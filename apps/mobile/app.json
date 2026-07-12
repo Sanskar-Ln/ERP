@@ -1,0 +1,15 @@
+{
+  "expo": {
+    "name": "Jewellery ERP",
+    "slug": "jewellery-erp",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": { "supportsTablet": false },
+    "android": { "package": "app.erp.jewellery" },
+    "extra": {
+      "apiUrl": "http://localhost:3001/api/v1"
+    }
+  }
+}
