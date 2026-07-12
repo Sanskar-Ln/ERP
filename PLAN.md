@@ -49,7 +49,7 @@ Monorepo: NestJS API + Next.js web admin + Expo mobile + shared package.
       code only — repricing never reprints), label templates, batch label
       generation, server-side barcode via bwip-js (Code128 default,
       DataMatrix option).
-- [ ] **M6 — Billing & documents**: document-type engine (Tax Invoice /
+- [x] **M6 — Billing & documents**: document-type engine (Tax Invoice /
       Estimate / Delivery Challan from one cart), Estimate→Tax Invoice
       conversion with linkage + audit, GST engine (3% metal, 5% making
       itemized, composite 3% studded, CGST/SGST vs IGST, mixed-supply guard),

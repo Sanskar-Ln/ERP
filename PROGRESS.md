@@ -35,17 +35,27 @@ the full milestone list and ARCHITECTURE.md for the system map.
   batch HTML label sheets with data-URI barcodes. Price-free payload
   triple-enforced (domain fns, 4 tests). Smoke-tested end-to-end.
 
+- **M6 — Billing & documents**: pure pricing engine (wastage-inclusive
+  metal value, FLAT/PER_GRAM/PERCENT making, discount floor; 6 tests) +
+  pure GST engine (itemized 3%+5%, studded composite 3%, imitation 18%,
+  CGST/SGST vs IGST, mixed-supply §8(b) guard, old-gold value-addition,
+  kaccha zero-tax, TaxConfigError on matrix gaps; 12 tests). Document
+  engine: one cart → INV/EST/DC, row-locked NumberSeries, snapshot-frozen
+  lines, SALE_OUT + SOLD on invoice, estimate→invoice conversion with
+  linkage (quote honoured, not repriced), cancel with stock reversal —
+  all single-tx with audit rows. Smoke-tested: est→convert→cancel,
+  studded+exchange (tax on addition only), inter-state IGST.
+
 ## In progress
 
-- M6 — Billing & documents.
+- M7 — Web admin (Next.js).
 
 ## Resume point
 
-Build domain pricing + GST engine (pure, heavily tested):
-`domain/pricing/price-item.ts` (metal value via rate+wastage, stones,
-making charge rules, discounts), `domain/billing/gst-engine.ts`
-(itemized 3%+5% vs studded composite 3%, CGST/SGST vs IGST, mixed-supply
-guard, old-gold value-addition rule), then `modules/billing` document
-engine: one cart → TAX_INVOICE/ESTIMATE/DELIVERY_CHALLAN, NumberSeries,
-SALE_OUT/EXCHANGE_IN movements, estimate→invoice conversion, cancel with
-reversal — all in one tx with audit rows.
+Scaffold `apps/web`: Next.js App Router + Tailwind, login page (JWT in
+localStorage + fetch wrapper), sidebar layout, pages: dashboard (rates,
+stock summary), masters (metals/purities, tax rules, customers), inventory
+(items list/create, movements, transfers), tagging (tags, label batches →
+open render HTML), billing (cart → issue any doc type, documents list,
+detail with tax lines, convert/cancel buttons). Uses @erp/shared zod
+schemas for forms. Then M8 mobile.
