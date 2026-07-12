@@ -108,8 +108,10 @@ Nothing — **the MVP scope is complete and pushed.**
 
 ## Resume point
 
-MVP done. Natural next steps if development continues (see REPORT.md
-“Known gaps”): credit-note document type + supersede endpoint, old-gold
-scrap intake lot, metal-rate feed poller, PDF invoice rendering, CI
-pipeline, e2e test harness, mobile camera scanning + secure token
-storage, offline sync.
+MVP done (plus post-MVP additions above: mobile manager view, paper
+bills with OCR, customer history view, org signup UI, camera scanning,
+manager CSV reports). Natural next steps if development continues (see
+REPORT.md “Known gaps”): credit-note document type + supersede endpoint,
+old-gold scrap intake lot, metal-rate feed poller, PDF invoice
+rendering, PDF rasterizing for OCR, CI pipeline, e2e test harness,
+mobile secure token storage, offline sync.
