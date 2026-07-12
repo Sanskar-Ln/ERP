@@ -38,6 +38,9 @@ export default function LoginPage() {
           {busy ? 'Signing in…' : 'Sign in'}
         </button>
         <p className="text-xs text-neutral-400">demo: owner@demo.in / demo1234</p>
+        <p className="text-xs text-neutral-400">
+          new shop? <a href="/register" className="text-amber-700">create an organisation</a>
+        </p>
       </form>
     </main>
   );

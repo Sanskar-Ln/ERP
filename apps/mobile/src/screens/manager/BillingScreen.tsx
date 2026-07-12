@@ -8,6 +8,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api, inr, session, ui } from '../../lib/api';
+import BarcodeScanButton from '../../components/BarcodeScanButton';
 
 interface Customer {
   id: string;
@@ -38,6 +39,7 @@ interface DocDetail extends Doc {
 export default function BillingScreen(): React.JSX.Element {
   const [phone, setPhone] = useState('');
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [history, setHistory] = useState<Doc[]>([]);
   const [code, setCode] = useState('');
   const [cart, setCart] = useState<Item[]>([]);
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -58,17 +60,26 @@ export default function BillingScreen(): React.JSX.Element {
     void load();
   }, [load]);
 
+  /**
+   * Recurring-customer history: when a customer is picked, load ALL their
+   * past documents so the manager sees the multi-bill history right here.
+   */
   async function findCustomer(): Promise<void> {
     setMsg('');
     const found = await api<Customer[]>('GET', `/customers?q=${encodeURIComponent(phone)}`);
-    if (found.length === 0) setMsg('no customer found');
-    else setCustomer(found[0] ?? null);
+    if (found.length === 0) {
+      setMsg('no customer found');
+      return;
+    }
+    const c = found[0] ?? null;
+    setCustomer(c);
+    if (c) setHistory(await api<Doc[]>('GET', `/documents?customerId=${c.id}`));
   }
 
-  async function addItem(): Promise<void> {
+  async function addItem(raw?: string): Promise<void> {
     setMsg('');
     try {
-      const itemCode = code.trim().toUpperCase().split('#')[0] ?? '';
+      const itemCode = (raw ?? code).trim().toUpperCase().split('#')[0] ?? '';
       const item = await api<Item>('GET', `/items/by-code/${encodeURIComponent(itemCode)}`);
       if (!cart.some((i) => i.id === item.id)) setCart([...cart, item]);
       setCode('');
@@ -148,6 +159,18 @@ export default function BillingScreen(): React.JSX.Element {
           </TouchableOpacity>
         </View>
         {customer && <Text style={styles.ok}>{customer.name} · {customer.phone}</Text>}
+        {customer && history.length > 0 && (
+          <View style={styles.history}>
+            <Text style={styles.meta}>previous bills of this customer ({history.length}):</Text>
+            {history.slice(0, 5).map((h) => (
+              <TouchableOpacity key={h.id} onPress={() => void open(h.id)}>
+                <Text style={styles.historyLine}>
+                  {h.docNumber} · {h.status} · {inr(h.grandTotalPaise)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
         <View style={styles.row}>
           <TextInput
             style={[styles.input, styles.flex]}
@@ -157,6 +180,7 @@ export default function BillingScreen(): React.JSX.Element {
             onChangeText={setCode}
             onSubmitEditing={() => void addItem()}
           />
+          <BarcodeScanButton onScan={(scanned) => void addItem(scanned)} />
           <TouchableOpacity style={styles.btnSmall} onPress={() => void addItem()}>
             <Text style={styles.btnText}>Add</Text>
           </TouchableOpacity>
@@ -246,6 +270,8 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: ui.border, gap: 6 },
   line: { fontSize: 13, color: ui.text },
   meta: { fontSize: 12, color: ui.muted },
+  history: { gap: 2, paddingLeft: 4, borderLeftWidth: 2, borderLeftColor: ui.border },
+  historyLine: { fontSize: 12, color: ui.amber },
   total: { fontSize: 20, fontWeight: '700', color: ui.amber },
   total2: { fontSize: 15, fontWeight: '600', color: ui.amber },
 });

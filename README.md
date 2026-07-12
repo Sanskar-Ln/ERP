@@ -62,8 +62,15 @@ Swagger docs at <http://localhost:3001/api/docs>.
 pnpm --filter @erp/web dev
 ```
 
-Open <http://localhost:3000> and sign in (logins below). If the API runs
-elsewhere, set `NEXT_PUBLIC_API_URL` first.
+Open <http://localhost:3000> and sign in (logins below), or create a brand
+new organisation at <http://localhost:3000/register> — every registration
+provisions a fully isolated tenant (own branches, staff, stock, billing).
+If the API runs elsewhere, set `NEXT_PUBLIC_API_URL` first.
+
+The **Customers** page shows the recurring-customer view: pick a customer
+to see ALL their system documents plus their uploaded **paper bills**
+(photo/scan of old bills, JPEG/PNG/WebP/PDF up to 10 MB), with upload and
+in-browser viewing.
 
 ### 5. Mobile (`apps/mobile`)
 
@@ -81,9 +88,14 @@ The app picks its view from the login role:
 
 - **Manager view** (`manager@demo.in` / `owner@demo.in`) — Dashboard,
   Stock (create items, adjustments, receive transfers), full Billing
-  (invoice/estimate/challan, convert, cancel), Rates.
+  (invoice/estimate/challan, customer bill history, convert, cancel),
+  Rates.
 - **Sales counter view** (`sales@demo.in`) — Rates, scan-to-price stock
   lookup, Estimate creation.
+
+Both views have a **camera barcode scanner** (Scan button next to every
+item-code field; Code128 + DataMatrix). A USB/Bluetooth scanner in
+keyboard mode also works — it just types into the same fields.
 
 ### 6. Demo logins (after seeding — password `demo1234` for all)
 

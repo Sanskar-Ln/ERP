@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api, inr } from '../../lib/api';
+import BarcodeScanButton from '../../components/BarcodeScanButton';
 
 interface Item {
   id: string;
@@ -32,13 +33,13 @@ export default function LookupScreen(): React.JSX.Element {
   const [price, setPrice] = useState<Price | null>(null);
   const [error, setError] = useState('');
 
-  async function lookup(): Promise<void> {
+  async function lookup(raw?: string): Promise<void> {
     setError('');
     setItem(null);
     setPrice(null);
     try {
       // Accept either a raw item code or a scanned tag code (CODE#ordinal).
-      const itemCode = code.trim().toUpperCase().split('#')[0] ?? '';
+      const itemCode = (raw ?? code).trim().toUpperCase().split('#')[0] ?? '';
       const found = await api<Item>('GET', `/items/by-code/${encodeURIComponent(itemCode)}`);
       setItem(found);
       setPrice(await api<Price>('GET', `/items/${found.id}/price`));
@@ -58,6 +59,12 @@ export default function LookupScreen(): React.JSX.Element {
           value={code}
           onChangeText={setCode}
           onSubmitEditing={() => void lookup()}
+        />
+        <BarcodeScanButton
+          onScan={(scanned) => {
+            setCode(scanned);
+            void lookup(scanned);
+          }}
         />
         <TouchableOpacity style={styles.btn} onPress={() => void lookup()}>
           <Text style={styles.btnText}>Find</Text>

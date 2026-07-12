@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { api, inr } from '../../lib/api';
+import BarcodeScanButton from '../../components/BarcodeScanButton';
 
 interface Customer {
   id: string;
@@ -40,10 +41,10 @@ export default function EstimateScreen(): React.JSX.Element {
     else setCustomer(found[0] ?? null);
   }
 
-  async function addItem(): Promise<void> {
+  async function addItem(raw?: string): Promise<void> {
     setMsg('');
     try {
-      const itemCode = code.trim().toUpperCase().split('#')[0] ?? '';
+      const itemCode = (raw ?? code).trim().toUpperCase().split('#')[0] ?? '';
       const item = await api<Item>('GET', `/items/by-code/${encodeURIComponent(itemCode)}`);
       if (!items.some((i) => i.id === item.id)) setItems([...items, item]);
       setCode('');
@@ -103,6 +104,7 @@ export default function EstimateScreen(): React.JSX.Element {
           onChangeText={setCode}
           onSubmitEditing={() => void addItem()}
         />
+        <BarcodeScanButton onScan={(scanned) => void addItem(scanned)} />
         <TouchableOpacity style={styles.btn} onPress={() => void addItem()}>
           <Text style={styles.btnText}>Add</Text>
         </TouchableOpacity>

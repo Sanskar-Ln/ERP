@@ -12,6 +12,7 @@ import { session, type SessionUser } from '@/lib/api';
 const NAV = [
   ['/dashboard', 'Dashboard'],
   ['/masters', 'Master data'],
+  ['/customers', 'Customers'],
   ['/inventory', 'Inventory'],
   ['/tagging', 'Tags & labels'],
   ['/billing', 'Billing'],

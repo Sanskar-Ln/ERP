@@ -127,9 +127,12 @@ inter-state IGST), and the web admin was driven in headless Chromium.
 - No external metal-rate feed integration — `source: FEED` rows are
   accepted via the same endpoint; a poller is future work.
 - No printable PDF invoice (web renders totals; label sheets are HTML).
-- Mobile keeps the JWT in memory only and has no camera-scanner
-  integration (scanner-as-keyboard works); offline sync is design-ready
-  (UUIDs, append-only) but not implemented.
+- Mobile keeps the JWT in memory only; offline sync is design-ready
+  (UUIDs, append-only) but not implemented. Camera barcode scanning
+  (Code128/DataMatrix via expo-camera) IS implemented alongside
+  keyboard-wedge scanners.
+- Uploaded paper bills are stored and viewable but not OCR-parsed —
+  their contents are not extracted into structured data.
 - No e2e/integration test harness (unit + scripted smoke only); no CI
   pipeline config in-repo.
 - Single warehouse per branch; no per-karigar metal reconciliation

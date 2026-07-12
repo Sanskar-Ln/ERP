@@ -76,6 +76,20 @@ the full milestone list and ARCHITECTURE.md for the system map.
   manager can post adjustments, salesperson gets 403). Root README
   rewritten as a step-by-step "run everything" guide.
 
+- **Post-MVP: paper bills, customer history view, org signup, camera
+  scanning** — (1) new `paper-bills` API module: multipart upload
+  (JPEG/PNG/WebP/PDF ≤10 MB) filed against a customer, tenant-scoped
+  file streaming, append-only + audited; (2) web **Customers** page:
+  pick a customer → ALL their system documents + ALL uploaded paper
+  bills side by side (the recurring-customer multi-bill view), with
+  upload + in-browser viewing; (3) web **/register** page — create any
+  number of isolated organisations (tenants) with auto-login; (4) mobile
+  camera barcode scanning (expo-camera, Code128 + DataMatrix) via a
+  shared ScanButton on every item-code field in both views, plus
+  customer bill history in manager Billing. Verified: multipart upload/
+  stream/type-reject smoke, second-org registration, headless-Chromium
+  customers page, mobile tsc + expo export.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

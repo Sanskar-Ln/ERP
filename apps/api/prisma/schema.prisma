@@ -268,8 +268,32 @@ model Customer {
   kycDocs     Json    @default("[]") // [{docType, docNumber}] — see zKycDoc
   createdAt   DateTime @default(now())
 
+  paperBills PaperBill[]
+
   @@index([tenantId, phone])
   @@index([tenantId, name])
+}
+
+// Scanned/photographed PAPER bills attached to a customer — the shop's
+// old handwritten/printed bills digitized. A customer accumulates many of
+// these over time (recurring customers), alongside their system-issued
+// Documents. Rows are append-only (no update/delete endpoints); the file
+// itself lives on disk under UPLOAD_DIR, referenced by storagePath.
+model PaperBill {
+  id               String   @id
+  tenantId         String
+  customerId       String
+  customer         Customer @relation(fields: [customerId], references: [id])
+  fileName         String // original name as uploaded, display only
+  mimeType         String // image/jpeg | image/png | image/webp | application/pdf
+  sizeBytes        Int
+  storagePath      String // server-side file name under UPLOAD_DIR (uuid + ext)
+  note             String? // e.g. "old bill 2019, gold chain repair"
+  billDate         DateTime? // date written on the paper bill, if known
+  uploadedByUserId String?
+  uploadedAt       DateTime @default(now())
+
+  @@index([tenantId, customerId, uploadedAt(sort: Desc)])
 }
 
 model Supplier {
