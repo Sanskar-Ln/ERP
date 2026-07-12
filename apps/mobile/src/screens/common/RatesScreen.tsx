@@ -1,7 +1,9 @@
 /** Board rates (common to both views) — latest per (metal, purity). */
 import React, { useCallback, useEffect, useState } from 'react';
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
-import { api, inr, ui } from '../../lib/api';
+import { FlatList, RefreshControl, StyleSheet, View } from 'react-native';
+import { api, inr } from '../../lib/api';
+import { color } from '../../lib/theme';
+import { Badge, ScreenHeader, StatTile } from '../../components/kit';
 
 interface Metal {
   id: string;
@@ -15,14 +17,14 @@ interface RateRow {
   source: string;
   effectiveAt: string;
 }
-interface Card {
+interface CardData {
   key: string;
   title: string;
   rate: RateRow | undefined;
 }
 
 export default function RatesScreen(): React.JSX.Element {
-  const [cards, setCards] = useState<Card[]>([]);
+  const [cards, setCards] = useState<CardData[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
@@ -56,24 +58,23 @@ export default function RatesScreen(): React.JSX.Element {
       contentContainerStyle={styles.list}
       data={cards}
       keyExtractor={(c) => c.key}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load()} />}
-      ListHeaderComponent={<Text style={styles.h1}>Board rates (per 10 g)</Text>}
-      renderItem={({ item }) => (
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{item.title}</Text>
-          <Text style={styles.cardRate}>{item.rate ? inr(item.rate.ratePaisePer10g) : '—'}</Text>
-          {item.rate && <Text style={styles.cardMeta}>{item.rate.source}</Text>}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load()} tintColor={color.gold500} />}
+      ListHeaderComponent={
+        <View style={{ marginBottom: 10 }}>
+          <ScreenHeader title="Board rates" description="Per 10 g at each purity — pull down to refresh" />
         </View>
+      }
+      renderItem={({ item }) => (
+        <StatTile
+          label={item.title}
+          value={item.rate ? inr(item.rate.ratePaisePer10g) : '—'}
+          foot={item.rate ? <Badge status={item.rate.source} /> : undefined}
+        />
       )}
     />
   );
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 16, gap: 10 },
-  h1: { fontSize: 18, fontWeight: '700', marginBottom: 6 },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 14, borderWidth: 1, borderColor: ui.border },
-  cardTitle: { fontSize: 13, color: ui.muted },
-  cardRate: { fontSize: 20, fontWeight: '700' },
-  cardMeta: { fontSize: 10, color: ui.faint },
+  list: { padding: 18, gap: 10 },
 });

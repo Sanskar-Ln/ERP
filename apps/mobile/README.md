@@ -26,14 +26,28 @@ Which view mounts is decided by the role in the login response.
 | Stock | scan/enter an item or tag code → item details + **live price at today's rate** (`/items/:id/price`) — possible because tags never encode price |
 | Estimate | find customer by phone, add items by code, issue a kaccha Estimate |
 
+## Design system
+
+Same brand as the web admin: **Inter** (all UI text and figures) and
+**Fraunces** (wordmark/screen titles only), loaded via expo-font from
+npm-bundled `@expo-google-fonts` packages — no font CDN. Gold accent over
+warm stone neutrals, espresso tab bar with lucide icons, reserved status
+badges (always labelled), soft-shadow cards, labelled form fields.
+Tokens in `src/lib/theme.ts`; primitives (Btn, Card, Badge, ScreenHeader,
+StatTile, Field, Notice) in `src/components/kit.tsx`.
+
 ## Folder layout (kept strictly separated)
 
 ```
-App.tsx                     role-based view switcher + tab bar (no nav lib)
+App.tsx                     font loading + role-based view switcher + icon tab bar
 index.ts                    Expo entry (pnpm-safe registerRootComponent)
 src/
 ├── lib/
-│   └── api.ts              fetch wrapper, session (token+user+role), inr(), ui tokens
+│   ├── api.ts              fetch wrapper, session (token+user+role), inr()
+│   └── theme.ts            design tokens: colors, fonts, radii, status tones
+├── components/
+│   ├── kit.tsx             UI primitives shared by both views
+│   └── BarcodeScanButton.tsx  camera scanner (Code128/DataMatrix)
 └── screens/
     ├── common/             used by BOTH views: LoginScreen, RatesScreen
     ├── manager/            manager view only: DashboardScreen, StockScreen, BillingScreen

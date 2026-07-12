@@ -1,12 +1,14 @@
 /**
- * Stock lookup — the counter scan flow. A barcode scanner (or thumb)
- * enters the item code; the app resolves the item and shows the LIVE
- * price at today's board rate via /items/:id/price. This works because
- * tags never encode price — see the tagging module.
+ * Stock lookup — the counter scan flow. A barcode scan (camera or
+ * keyboard-wedge scanner) or typed item code resolves the item and shows
+ * the LIVE price at today's board rate via /items/:id/price. This works
+ * because tags never encode price — see the tagging module.
  */
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api, inr } from '../../lib/api';
+import { color, font } from '../../lib/theme';
+import { Badge, Btn, Card, Field, Notice, ScreenHeader } from '../../components/kit';
 import BarcodeScanButton from '../../components/BarcodeScanButton';
 
 interface Item {
@@ -50,10 +52,10 @@ export default function LookupScreen(): React.JSX.Element {
 
   return (
     <ScrollView contentContainerStyle={styles.wrap}>
-      <Text style={styles.h1}>Stock lookup</Text>
+      <ScreenHeader title="Stock lookup" description="Scan a tag or enter an item code for the live price" />
       <View style={styles.row}>
-        <TextInput
-          style={[styles.input, { flex: 1 }]}
+        <Field
+          style={{ flex: 1 }}
           placeholder="scan / enter item code"
           autoCapitalize="characters"
           value={code}
@@ -66,59 +68,61 @@ export default function LookupScreen(): React.JSX.Element {
             void lookup(scanned);
           }}
         />
-        <TouchableOpacity style={styles.btn} onPress={() => void lookup()}>
-          <Text style={styles.btnText}>Find</Text>
-        </TouchableOpacity>
+        <Btn title="Find" onPress={() => void lookup()} />
       </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? <Notice kind="error">{error}</Notice> : null}
 
       {item && (
-        <View style={styles.card}>
-          <Text style={styles.title}>
-            {item.name} <Text style={styles.mono}>[{item.itemCode}]</Text>
-          </Text>
+        <Card>
+          <View style={styles.itemHead}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.itemTitle}>{item.name}</Text>
+              <Text style={styles.mono}>{item.itemCode}</Text>
+            </View>
+            <Badge status={item.status} />
+          </View>
           <Text style={styles.meta}>
-            {item.status} · {item.pieces} pc {item.isStudded ? '· studded' : ''}
+            {item.pieces} pc{item.isStudded ? ' · studded (composite 3% GST)' : ''}
           </Text>
           {item.metalComponents.map((mc, i) => (
             <Text key={i} style={styles.line}>
-              metal: gross {mc.grossWeightG} g · net {mc.netWeightG} g · wastage {(mc.wastageBps / 100).toFixed(2)}%
+              Metal · gross {mc.grossWeightG} g · net {mc.netWeightG} g · wastage {(mc.wastageBps / 100).toFixed(2)}%
             </Text>
           ))}
           {item.stoneComponents.map((sc, i) => (
             <Text key={i} style={styles.line}>
-              stone: {sc.weightCt} ct {sc.certLab ? `· ${sc.certLab} ${sc.certNo}` : ''}
+              Stone · {sc.weightCt} ct{sc.certLab ? ` · ${sc.certLab} ${sc.certNo}` : ''}
             </Text>
           ))}
-        </View>
+        </Card>
       )}
 
       {price && (
-        <View style={styles.card}>
-          <Text style={styles.title}>Price at today’s rate</Text>
-          <Text style={styles.line}>Metal: {inr(price.metalValuePaise)}</Text>
-          {price.stoneValuePaise > 0 && <Text style={styles.line}>Stones: {inr(price.stoneValuePaise)}</Text>}
-          <Text style={styles.line}>Making: {inr(price.makingPaise)}</Text>
-          <Text style={styles.total}>{inr(price.grossPaise)}</Text>
+        <Card style={styles.priceCard}>
+          <Text style={styles.priceLabel}>Price at today’s rate</Text>
+          <Text style={styles.priceTotal}>{inr(price.grossPaise)}</Text>
+          <View style={styles.priceRows}>
+            <Text style={styles.line}>Metal {inr(price.metalValuePaise)}</Text>
+            {price.stoneValuePaise > 0 && <Text style={styles.line}>Stones {inr(price.stoneValuePaise)}</Text>}
+            <Text style={styles.line}>Making {inr(price.makingPaise)}</Text>
+          </View>
           <Text style={styles.meta}>before GST · priced {new Date(price.pricedAt).toLocaleTimeString()}</Text>
-        </View>
+        </Card>
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 16, gap: 10 },
-  h1: { fontSize: 18, fontWeight: '700' },
-  row: { flexDirection: 'row', gap: 8 },
-  input: { borderWidth: 1, borderColor: '#d6d3d1', borderRadius: 6, padding: 10, backgroundColor: '#fff' },
-  btn: { backgroundColor: '#b45309', borderRadius: 6, paddingHorizontal: 16, justifyContent: 'center' },
-  btnText: { color: '#fff', fontWeight: '600' },
-  error: { color: '#dc2626' },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 14, borderWidth: 1, borderColor: '#e7e5e4', gap: 4 },
-  title: { fontSize: 15, fontWeight: '600' },
-  mono: { fontFamily: 'monospace', fontSize: 12, color: '#78716c' },
-  meta: { fontSize: 11, color: '#a8a29e' },
-  line: { fontSize: 13, color: '#44403c' },
-  total: { fontSize: 22, fontWeight: '700', color: '#b45309' },
+  wrap: { padding: 18, gap: 12 },
+  row: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  itemHead: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  itemTitle: { fontFamily: font.semibold, fontSize: 16, color: color.ink },
+  mono: { fontFamily: font.medium, fontSize: 12, color: color.inkMuted, letterSpacing: 0.5 },
+  meta: { fontFamily: font.regular, fontSize: 11.5, color: color.inkMuted },
+  line: { fontFamily: font.regular, fontSize: 13.5, color: color.inkSecondary },
+  priceCard: { borderColor: color.gold200, backgroundColor: color.gold50 },
+  priceLabel: { fontFamily: font.medium, fontSize: 12.5, color: color.gold700 },
+  priceTotal: { fontFamily: font.bold, fontSize: 30, color: color.gold900, letterSpacing: -0.5 },
+  priceRows: { gap: 2, marginTop: 2 },
 });

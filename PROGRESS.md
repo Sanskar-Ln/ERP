@@ -116,6 +116,16 @@ the full milestone list and ARCHITECTURE.md for the system map.
   Mobile accent aligned to the same gold. Verified in Chromium
   (screenshots, zero page errors); all tests/typechecks green.
 
+- **Post-MVP: mobile design system** — the Expo app now matches the web
+  brand: Inter + Fraunces via expo-font (npm-bundled, offline), gold/
+  espresso theme tokens (`lib/theme.ts`), a component kit (`components/
+  kit.tsx`: Btn variants, Card, labelled Badge with per-status tones,
+  ScreenHeader, StatTile, Field, Notice), espresso icon tab bar
+  (lucide-react-native + react-native-svg), gradient-branded login,
+  and all seven screens restyled (gold price/total highlight cards,
+  premium chips, soft shadows). Verified: tsc + expo export with all
+  36 font/icon assets bundled.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

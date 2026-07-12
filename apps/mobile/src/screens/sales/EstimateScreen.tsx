@@ -1,18 +1,19 @@
 /**
- * Estimate at the counter: find the customer by phone, add items by code,
- * issue an Estimate (kaccha — no GST) through the same document engine the
- * web admin uses. Conversion to a Tax Invoice happens later at the desk.
+ * Estimate at the counter: find the customer by phone, add items by
+ * scan/code, issue a kaccha Estimate (no GST) through the same document
+ * engine the web admin uses. Conversion happens later at the desk.
  */
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { api, inr } from '../../lib/api';
+import { color, font } from '../../lib/theme';
+import { Btn, Card, Field, Hint, Notice, ScreenHeader, SectionTitle } from '../../components/kit';
 import BarcodeScanButton from '../../components/BarcodeScanButton';
 
 interface Customer {
   id: string;
   name: string;
   phone: string;
-  branchId?: string;
 }
 interface Item {
   id: string;
@@ -76,79 +77,61 @@ export default function EstimateScreen(): React.JSX.Element {
 
   return (
     <ScrollView contentContainerStyle={styles.wrap}>
-      <Text style={styles.h1}>New estimate</Text>
+      <ScreenHeader title="New estimate" description="Kaccha quote at the counter — no GST until converted" />
 
-      <View style={styles.row}>
-        <TextInput
-          style={[styles.input, { flex: 1 }]}
-          placeholder="customer phone / name"
-          value={phone}
-          onChangeText={setPhone}
-        />
-        <TouchableOpacity style={styles.btn} onPress={() => void findCustomer()}>
-          <Text style={styles.btnText}>Find</Text>
-        </TouchableOpacity>
-      </View>
-      {customer && (
-        <Text style={styles.ok}>
-          {customer.name} · {customer.phone}
-        </Text>
-      )}
+      <Card>
+        <SectionTitle>Customer</SectionTitle>
+        <View style={styles.row}>
+          <Field style={{ flex: 1 }} placeholder="phone / name" value={phone} onChangeText={setPhone} />
+          <Btn title="Find" onPress={() => void findCustomer()} />
+        </View>
+        {customer && (
+          <Text style={styles.ok}>
+            {customer.name} · {customer.phone}
+          </Text>
+        )}
+      </Card>
 
-      <View style={styles.row}>
-        <TextInput
-          style={[styles.input, { flex: 1 }]}
-          placeholder="scan / enter item code"
-          autoCapitalize="characters"
-          value={code}
-          onChangeText={setCode}
-          onSubmitEditing={() => void addItem()}
-        />
-        <BarcodeScanButton onScan={(scanned) => void addItem(scanned)} />
-        <TouchableOpacity style={styles.btn} onPress={() => void addItem()}>
-          <Text style={styles.btnText}>Add</Text>
-        </TouchableOpacity>
-      </View>
-      {items.map((i) => (
-        <Text key={i.id} style={styles.line}>
-          • {i.itemCode} — {i.name}
-        </Text>
-      ))}
-      {msg ? <Text style={styles.error}>{msg}</Text> : null}
-
-      <TouchableOpacity
-        style={[styles.btn, styles.issue, (!customer || items.length === 0) && styles.disabled]}
-        disabled={!customer || items.length === 0}
-        onPress={() => void issue()}
-      >
-        <Text style={styles.btnText}>Issue estimate ({items.length})</Text>
-      </TouchableOpacity>
+      <Card>
+        <SectionTitle>Items</SectionTitle>
+        <View style={styles.row}>
+          <Field
+            style={{ flex: 1 }}
+            placeholder="scan / enter item code"
+            autoCapitalize="characters"
+            value={code}
+            onChangeText={setCode}
+            onSubmitEditing={() => void addItem()}
+          />
+          <BarcodeScanButton onScan={(scanned) => void addItem(scanned)} />
+          <Btn title="Add" onPress={() => void addItem()} />
+        </View>
+        {items.map((i) => (
+          <Text key={i.id} style={styles.line}>
+            • {i.itemCode} — {i.name}
+          </Text>
+        ))}
+        {msg ? <Notice kind="error">{msg}</Notice> : null}
+        <Btn title={`Issue estimate (${items.length})`} onPress={() => void issue()} disabled={!customer || items.length === 0} />
+      </Card>
 
       {doc && (
-        <View style={styles.card}>
-          <Text style={styles.title}>{doc.docNumber}</Text>
+        <Card style={styles.doneCard}>
+          <Text style={styles.docNo}>{doc.docNumber}</Text>
           <Text style={styles.total}>{inr(doc.grandTotalPaise)}</Text>
-          <Text style={styles.meta}>kaccha estimate — no GST; convert to Tax Invoice at the desk</Text>
-        </View>
+          <Hint>kaccha estimate — no GST; convert to Tax Invoice at the desk</Hint>
+        </Card>
       )}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 16, gap: 10 },
-  h1: { fontSize: 18, fontWeight: '700' },
-  row: { flexDirection: 'row', gap: 8 },
-  input: { borderWidth: 1, borderColor: '#d6d3d1', borderRadius: 6, padding: 10, backgroundColor: '#fff' },
-  btn: { backgroundColor: '#b45309', borderRadius: 6, paddingHorizontal: 16, justifyContent: 'center', paddingVertical: 10 },
-  btnText: { color: '#fff', fontWeight: '600', textAlign: 'center' },
-  issue: { marginTop: 6 },
-  disabled: { opacity: 0.5 },
-  ok: { color: '#15803d', fontSize: 13 },
-  error: { color: '#dc2626', fontSize: 13 },
-  line: { fontSize: 13, color: '#44403c' },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 14, borderWidth: 1, borderColor: '#e7e5e4', gap: 4 },
-  title: { fontSize: 15, fontWeight: '600' },
-  total: { fontSize: 22, fontWeight: '700', color: '#b45309' },
-  meta: { fontSize: 11, color: '#a8a29e' },
+  wrap: { padding: 18, gap: 12 },
+  row: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  ok: { fontFamily: font.medium, fontSize: 13, color: color.good },
+  line: { fontFamily: font.regular, fontSize: 13.5, color: color.inkSecondary },
+  doneCard: { borderColor: color.gold200, backgroundColor: color.gold50 },
+  docNo: { fontFamily: font.semibold, fontSize: 15, color: color.gold700, letterSpacing: 0.3 },
+  total: { fontFamily: font.bold, fontSize: 28, color: color.gold900, letterSpacing: -0.5 },
 });

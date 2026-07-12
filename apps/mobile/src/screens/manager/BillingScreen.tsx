@@ -1,13 +1,16 @@
 /**
- * Manager billing — the full document engine from the phone, same as the
- * web admin: build a cart (customer + item codes), issue Tax Invoice /
- * Estimate / Delivery Challan, browse documents, convert an estimate,
- * cancel with stock reversal. All through the same RBAC'd endpoints —
- * the phone is a thin client, no billing logic lives here.
+ * Manager billing — the full document engine from the phone: build a
+ * cart (customer + item scans), issue Tax Invoice / Estimate / Challan,
+ * browse documents, convert an estimate, cancel with stock reversal.
+ * The phone is a thin client — no billing logic lives here. When a
+ * customer is picked, their previous bills load (recurring-customer
+ * history).
  */
 import React, { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { api, inr, session, ui } from '../../lib/api';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { api, inr, session } from '../../lib/api';
+import { color, font } from '../../lib/theme';
+import { Badge, Btn, Card, Field, Hint, Notice, ScreenHeader, SectionTitle } from '../../components/kit';
 import BarcodeScanButton from '../../components/BarcodeScanButton';
 
 interface Customer {
@@ -45,7 +48,13 @@ export default function BillingScreen(): React.JSX.Element {
   const [docs, setDocs] = useState<Doc[]>([]);
   const [detail, setDetail] = useState<DocDetail | null>(null);
   const [msg, setMsg] = useState('');
+  const [msgKind, setMsgKind] = useState<'success' | 'error'>('success');
   const [refreshing, setRefreshing] = useState(false);
+
+  const note = (kind: 'success' | 'error', text: string) => {
+    setMsgKind(kind);
+    setMsg(text);
+  };
 
   const load = useCallback(async () => {
     setRefreshing(true);
@@ -60,15 +69,12 @@ export default function BillingScreen(): React.JSX.Element {
     void load();
   }, [load]);
 
-  /**
-   * Recurring-customer history: when a customer is picked, load ALL their
-   * past documents so the manager sees the multi-bill history right here.
-   */
+  /** Recurring-customer history loads the moment a customer is picked. */
   async function findCustomer(): Promise<void> {
     setMsg('');
     const found = await api<Customer[]>('GET', `/customers?q=${encodeURIComponent(phone)}`);
     if (found.length === 0) {
-      setMsg('no customer found');
+      note('error', 'no customer found');
       return;
     }
     const c = found[0] ?? null;
@@ -84,7 +90,7 @@ export default function BillingScreen(): React.JSX.Element {
       if (!cart.some((i) => i.id === item.id)) setCart([...cart, item]);
       setCode('');
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'item not found');
+      note('error', e instanceof Error ? e.message : 'item not found');
     }
   }
 
@@ -102,12 +108,12 @@ export default function BillingScreen(): React.JSX.Element {
           cartDiscountPaise: 0,
         },
       });
-      setMsg(`${out.docNumber} issued${out.warnings?.length ? ` — ${out.warnings.join('; ')}` : ''}`);
+      note('success', `${out.docNumber} issued${out.warnings?.length ? ` — ${out.warnings.join('; ')}` : ''}`);
       setCart([]);
       setDetail(out);
       void load();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'failed');
+      note('error', e instanceof Error ? e.message : 'failed');
     }
   }
 
@@ -119,11 +125,11 @@ export default function BillingScreen(): React.JSX.Element {
     setMsg('');
     try {
       const inv = await api<DocDetail>('POST', `/documents/${id}/convert`);
-      setMsg(`converted → ${inv.docNumber}`);
+      note('success', `converted → ${inv.docNumber}`);
       setDetail(inv);
       void load();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'failed');
+      note('error', e instanceof Error ? e.message : 'failed');
     }
   }
 
@@ -131,11 +137,11 @@ export default function BillingScreen(): React.JSX.Element {
     setMsg('');
     try {
       await api('POST', `/documents/${id}/cancel`, { reason: 'cancelled from mobile by manager' });
-      setMsg('cancelled — stock reversed');
+      note('success', 'cancelled — stock reversed');
       setDetail(null);
       void load();
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : 'failed');
+      note('error', e instanceof Error ? e.message : 'failed');
     }
   }
 
@@ -145,35 +151,37 @@ export default function BillingScreen(): React.JSX.Element {
   return (
     <ScrollView
       contentContainerStyle={styles.wrap}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load()} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load()} tintColor={color.gold500} />}
     >
-      <Text style={styles.h1}>Billing</Text>
-      {msg ? <Text style={styles.msg}>{msg}</Text> : null}
+      <ScreenHeader title="Billing" description="One cart — Tax Invoice, Estimate or Delivery Challan" />
+      {msg ? <Notice kind={msgKind}>{msg}</Notice> : null}
 
-      <View style={styles.card}>
-        <Text style={styles.h2}>New document</Text>
+      <Card>
+        <SectionTitle>New document</SectionTitle>
         <View style={styles.row}>
-          <TextInput style={[styles.input, styles.flex]} placeholder="customer phone / name" value={phone} onChangeText={setPhone} />
-          <TouchableOpacity style={styles.btnSmall} onPress={() => void findCustomer()}>
-            <Text style={styles.btnText}>Find</Text>
-          </TouchableOpacity>
+          <Field style={{ flex: 1 }} placeholder="customer phone / name" value={phone} onChangeText={setPhone} />
+          <Btn title="Find" onPress={() => void findCustomer()} />
         </View>
-        {customer && <Text style={styles.ok}>{customer.name} · {customer.phone}</Text>}
+        {customer && (
+          <Text style={styles.ok}>
+            {customer.name} · {customer.phone}
+          </Text>
+        )}
         {customer && history.length > 0 && (
           <View style={styles.history}>
-            <Text style={styles.meta}>previous bills of this customer ({history.length}):</Text>
+            <Hint>previous bills of this customer ({history.length})</Hint>
             {history.slice(0, 5).map((h) => (
-              <TouchableOpacity key={h.id} onPress={() => void open(h.id)}>
+              <Pressable key={h.id} onPress={() => void open(h.id)}>
                 <Text style={styles.historyLine}>
-                  {h.docNumber} · {h.status} · {inr(h.grandTotalPaise)}
+                  {h.docNumber} · {h.status.replaceAll('_', ' ')} · {inr(h.grandTotalPaise)}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
         )}
         <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.flex]}
+          <Field
+            style={{ flex: 1 }}
             placeholder="scan / enter item code"
             autoCapitalize="characters"
             value={code}
@@ -181,97 +189,91 @@ export default function BillingScreen(): React.JSX.Element {
             onSubmitEditing={() => void addItem()}
           />
           <BarcodeScanButton onScan={(scanned) => void addItem(scanned)} />
-          <TouchableOpacity style={styles.btnSmall} onPress={() => void addItem()}>
-            <Text style={styles.btnText}>Add</Text>
-          </TouchableOpacity>
+          <Btn title="Add" onPress={() => void addItem()} />
         </View>
         {cart.map((i) => (
-          <Text key={i.id} style={styles.line}>• {i.itemCode} — {i.name}</Text>
+          <Text key={i.id} style={styles.line}>
+            • {i.itemCode} — {i.name}
+          </Text>
         ))}
         <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.btnHalf, (!customer || cart.length === 0) && styles.disabled]}
-            disabled={!customer || cart.length === 0}
-            onPress={() => void issue('TAX_INVOICE')}
-          >
-            <Text style={styles.btnText}>Tax Invoice</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btnHalf, (!customer || cart.length === 0) && styles.disabled]}
-            disabled={!customer || cart.length === 0}
-            onPress={() => void issue('ESTIMATE')}
-          >
-            <Text style={styles.btnText}>Estimate</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btnHalf, (!customer || cart.length === 0) && styles.disabled]}
-            disabled={!customer || cart.length === 0}
-            onPress={() => void issue('DELIVERY_CHALLAN')}
-          >
-            <Text style={styles.btnText}>Challan</Text>
-          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Btn title="Tax Invoice" onPress={() => void issue('TAX_INVOICE')} disabled={!customer || cart.length === 0} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Btn title="Estimate" variant="secondary" onPress={() => void issue('ESTIMATE')} disabled={!customer || cart.length === 0} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Btn title="Challan" variant="secondary" onPress={() => void issue('DELIVERY_CHALLAN')} disabled={!customer || cart.length === 0} />
+          </View>
         </View>
-      </View>
+      </Card>
 
       {detail && (
-        <View style={styles.card}>
-          <Text style={styles.h2}>{detail.docNumber} · {detail.status}</Text>
+        <Card style={styles.detailCard}>
+          <View style={styles.detailHead}>
+            <Text style={styles.docNo}>{detail.docNumber}</Text>
+            <Badge status={detail.status} />
+          </View>
           {detail.lines.map((l) => (
-            <Text key={l.lineNo} style={styles.line}>{l.lineNo}. {l.description} — {inr(l.grossPaise)}</Text>
+            <Text key={l.lineNo} style={styles.line}>
+              {l.lineNo}. {l.description} — {inr(l.grossPaise)}
+            </Text>
           ))}
-          {detail.exchangeValuePaise > 0 && <Text style={styles.line}>Old gold: −{inr(detail.exchangeValuePaise)}</Text>}
-          <Text style={styles.line}>Taxable: {inr(detail.taxableValuePaise)}</Text>
+          {detail.exchangeValuePaise > 0 && <Text style={styles.line}>Old gold −{inr(detail.exchangeValuePaise)}</Text>}
+          <Text style={styles.line}>Taxable {inr(detail.taxableValuePaise)}</Text>
           {detail.taxLines.map((t, i) => (
-            <Text key={i} style={styles.meta}>{t.label}: {inr(t.taxPaise)}</Text>
+            <Text key={i} style={styles.meta}>
+              {t.label}: {inr(t.taxPaise)}
+            </Text>
           ))}
           <Text style={styles.total}>{inr(detail.grandTotalPaise)}</Text>
           <View style={styles.row}>
             {canConvert && (
-              <TouchableOpacity style={styles.btnHalf} onPress={() => void convert(detail.id)}>
-                <Text style={styles.btnText}>Convert → Invoice</Text>
-              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Btn title="Convert → Invoice" onPress={() => void convert(detail.id)} />
+              </View>
             )}
             {canCancel && (
-              <TouchableOpacity style={[styles.btnHalf, styles.btnDanger]} onPress={() => void cancel(detail.id)}>
-                <Text style={styles.btnText}>Cancel</Text>
-              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Btn title="Cancel" variant="danger" onPress={() => void cancel(detail.id)} />
+              </View>
             )}
           </View>
-        </View>
+        </Card>
       )}
 
-      <Text style={styles.h2}>Documents</Text>
+      <SectionTitle>Documents</SectionTitle>
       {docs.map((d) => (
-        <TouchableOpacity key={d.id} style={styles.card} onPress={() => void open(d.id)}>
-          <Text style={styles.line}>
-            {d.docNumber} · {d.docType} · {d.status}
-          </Text>
-          <Text style={styles.total2}>{inr(d.grandTotalPaise)}</Text>
-        </TouchableOpacity>
+        <Pressable key={d.id} onPress={() => void open(d.id)}>
+          <Card style={styles.docCard}>
+            <View style={{ flex: 1, gap: 4 }}>
+              <Text style={styles.docNo}>{d.docNumber}</Text>
+              <View style={styles.row}>
+                <Badge status={d.docType} />
+                <Badge status={d.status} />
+              </View>
+            </View>
+            <Text style={styles.docTotal}>{inr(d.grandTotalPaise)}</Text>
+          </Card>
+        </Pressable>
       ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { padding: 16, gap: 8 },
-  h1: { fontSize: 18, fontWeight: '700' },
-  h2: { fontSize: 14, fontWeight: '600' },
-  msg: { color: ui.amber, fontSize: 13 },
-  ok: { color: ui.green, fontSize: 13 },
-  row: { flexDirection: 'row', gap: 8 },
-  flex: { flex: 1 },
-  input: { borderWidth: 1, borderColor: '#d6d3d1', borderRadius: 6, padding: 9, backgroundColor: '#fff', fontSize: 13 },
-  btnSmall: { backgroundColor: ui.amber, borderRadius: 6, paddingHorizontal: 14, justifyContent: 'center' },
-  btnHalf: { backgroundColor: ui.amber, borderRadius: 6, padding: 10, alignItems: 'center', flex: 1 },
-  btnDanger: { backgroundColor: ui.red },
-  btnText: { color: '#fff', fontWeight: '600', fontSize: 12 },
-  disabled: { opacity: 0.5 },
-  card: { backgroundColor: '#fff', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: ui.border, gap: 6 },
-  line: { fontSize: 13, color: ui.text },
-  meta: { fontSize: 12, color: ui.muted },
-  history: { gap: 2, paddingLeft: 4, borderLeftWidth: 2, borderLeftColor: ui.border },
-  historyLine: { fontSize: 12, color: ui.amber },
-  total: { fontSize: 20, fontWeight: '700', color: ui.amber },
-  total2: { fontSize: 15, fontWeight: '600', color: ui.amber },
+  wrap: { padding: 18, gap: 12 },
+  row: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  ok: { fontFamily: font.medium, fontSize: 13, color: color.good },
+  history: { gap: 4, paddingLeft: 10, borderLeftWidth: 2, borderLeftColor: color.gold200 },
+  historyLine: { fontFamily: font.medium, fontSize: 12.5, color: color.gold700 },
+  line: { fontFamily: font.regular, fontSize: 13.5, color: color.inkSecondary },
+  meta: { fontFamily: font.regular, fontSize: 12, color: color.inkMuted },
+  detailCard: { borderColor: color.gold200, backgroundColor: color.gold50 },
+  detailHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  docNo: { fontFamily: font.semibold, fontSize: 14, color: color.ink, letterSpacing: 0.2 },
+  total: { fontFamily: font.bold, fontSize: 26, color: color.gold900, letterSpacing: -0.5 },
+  docCard: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  docTotal: { fontFamily: font.semibold, fontSize: 15, color: color.ink },
 });
