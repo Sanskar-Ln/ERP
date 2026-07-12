@@ -58,7 +58,7 @@ Monorepo: NestJS API + Next.js web admin + Expo mobile + shared package.
       billing screens.
 - [x] **M8 — Mobile** (Expo): thin online-only client — login, catalogue/stock
       lookup, rate view, estimate creation.
-- [ ] **M9 — REPORT.md**: final summary, run instructions, coverage, gaps.
+- [x] **M9 — REPORT.md**: final summary, run instructions, coverage, gaps.
 
 ## Tax facts encoded as *seed data* for the configurable tax-rule matrix
 (India, 2026 — configurable per tenant, not hardcoded)

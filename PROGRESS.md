@@ -61,13 +61,18 @@ the full milestone list and ARCHITECTURE.md for the system map.
   estimate creation at the counter. Verified: `tsc --noEmit` + full
   `expo export` Metro→Hermes bundle.
 
+- **M9 — REPORT.md**: final report (scope, decisions, run instructions,
+  79-test coverage table, known gaps), root README, architecture refresh.
+  Full workspace verification: builds, tests, typechecks all green.
+
 ## In progress
 
-- M9 — REPORT.md.
+Nothing — **the MVP scope is complete and pushed.**
 
 ## Resume point
 
-Write REPORT.md (what was built, architecture decisions, how to run each
-app, test coverage, known gaps), refresh ARCHITECTURE.md if needed, root
-README.md; run the full workspace build+tests one last time; commit and
-push. MVP complete after that.
+MVP done. Natural next steps if development continues (see REPORT.md
+“Known gaps”): credit-note document type + supersede endpoint, old-gold
+scrap intake lot, metal-rate feed poller, PDF invoice rendering, CI
+pipeline, e2e test harness, mobile camera scanning + secure token
+storage, offline sync.

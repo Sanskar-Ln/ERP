@@ -116,7 +116,9 @@ see PLAN.md). The GST computation engine then:
 REST under `/api/v1/*`, documented via Swagger at `/api/docs`.
 Auth: `POST /auth/login` → JWT (claims: `sub`, `tenantId`, `role`).
 RBAC guard maps roles to permissions per route. All list endpoints are
-tenant-scoped implicitly.
+tenant-scoped implicitly. `GET /items/:id/price` computes the live price
+at the latest board rate — the counterpart of price-free barcodes:
+scan resolves the item, this prices the moment.
 
 ## 6. Web & mobile
 
