@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { api, apiBlob } from '@/lib/api';
+import { PageHeader } from '@/components/ui';
 
 interface Item {
   id: string;
@@ -95,11 +96,11 @@ export default function TaggingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Tags & labels</h1>
+      <PageHeader title="Tags & labels" description="Price-free barcodes per piece — repricing never needs a reprint" />
       {msg && <p className="text-sm text-amber-700">{msg}</p>}
 
       <section className="card">
-        <h2 className="mb-3 font-medium">Tag a piece</h2>
+        <h2 className="section-title mb-3">Tag a piece</h2>
         <form onSubmit={createTag} className="flex gap-2">
           <select className="input w-72" value={itemId} onChange={(e) => setItemId(e.target.value)}>
             <option value="">item…</option>
@@ -120,7 +121,7 @@ export default function TaggingPage() {
 
       <section className="card">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-medium">Tags</h2>
+          <h2 className="section-title">Tags</h2>
           <div className="flex items-center gap-2">
             <select className="input w-56" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
               <option value="">template (auto-create)…</option>
@@ -155,7 +156,7 @@ export default function TaggingPage() {
                 <td className="td font-mono text-xs">{t.tagCode}</td>
                 <td className="td">{t.symbology}</td>
                 <td className="td">
-                  <button className="btn-secondary" onClick={() => void showBarcode(t.id)}>barcode</button>
+                  <button className="btn-secondary btn-xs" onClick={() => void showBarcode(t.id)}>barcode</button>
                 </td>
               </tr>
             ))}

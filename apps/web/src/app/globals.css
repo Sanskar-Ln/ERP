@@ -1,23 +1,136 @@
 @import 'tailwindcss';
 
-/* Small shared primitives so page code stays lean. */
+/*
+ * Design system — jewellery ERP web admin.
+ *
+ * Typography: Inter Variable for all UI and numbers (values/figures are
+ * NEVER set in the serif — it reads as decoration); Fraunces Variable is
+ * reserved for the brand wordmark and page display headings only.
+ * Palette: warm stone neutrals + a restrained gold accent (the trade's
+ * colour without the kitsch), reserved status colours (always paired
+ * with a text label, never colour alone).
+ */
+
+@theme {
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+
+  /* brand golds */
+  --color-gold-50: #fdf9ef;
+  --color-gold-100: #f9efd8;
+  --color-gold-200: #f2dcab;
+  --color-gold-300: #e9c377;
+  --color-gold-400: #dfa54a;
+  --color-gold-500: #d28c2a;
+  --color-gold-600: #b76f1f;
+  --color-gold-700: #93541c;
+  --color-gold-800: #78441d;
+  --color-gold-900: #63381b;
+  --color-gold-950: #391c0c;
+
+  /* sidebar espresso */
+  --color-espresso-800: #2b211b;
+  --color-espresso-900: #211a15;
+  --color-espresso-950: #17110d;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: 'cv11', 'ss01';
+  -webkit-font-smoothing: antialiased;
+}
+
 @layer components {
+  /* ---------------------------------------------------------- buttons */
   .btn {
-    @apply rounded bg-amber-700 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-800 disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b
+      from-gold-500 to-gold-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm
+      transition-all duration-150 hover:from-gold-600 hover:to-gold-700 hover:shadow
+      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500
+      active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
   }
   .btn-secondary {
-    @apply rounded border border-neutral-300 px-3 py-1.5 text-sm hover:bg-neutral-100;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-300
+      bg-white px-3.5 py-2 text-sm font-medium text-stone-700 shadow-sm transition-all
+      duration-150 hover:border-stone-400 hover:bg-stone-50
+      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500
+      active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
   }
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200
+      bg-white px-3.5 py-2 text-sm font-medium text-red-700 shadow-sm transition-all
+      duration-150 hover:border-red-300 hover:bg-red-50
+      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500
+      disabled:pointer-events-none disabled:opacity-50;
+  }
+  /* compact variant for table rows */
+  .btn-xs {
+    @apply px-2.5 py-1 text-xs;
+  }
+
+  /* ---------------------------------------------------------- inputs */
   .input {
-    @apply w-full rounded border border-neutral-300 px-2 py-1.5 text-sm focus:border-amber-600 focus:outline-none;
+    @apply w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm
+      text-stone-900 placeholder:text-stone-400 shadow-sm transition-colors
+      focus:border-gold-500 focus:outline-none focus:ring-2 focus:ring-gold-500/20;
   }
+  select.input {
+    @apply pr-8;
+  }
+
+  /* ---------------------------------------------------------- surfaces */
   .card {
-    @apply rounded-lg border border-neutral-200 bg-white p-4 shadow-sm;
+    @apply rounded-xl border border-stone-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_4px_12px_-4px_rgb(0_0_0/0.06)];
   }
+
+  /* ---------------------------------------------------------- tables */
   .th {
-    @apply border-b border-neutral-200 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-neutral-500;
+    @apply border-b border-stone-200 px-3 py-2.5 text-left text-[11px] font-semibold
+      uppercase tracking-wider text-stone-400;
   }
   .td {
-    @apply border-b border-neutral-100 px-3 py-2 text-sm;
+    @apply border-b border-stone-100 px-3 py-2.5 text-sm text-stone-700;
+  }
+  tbody tr {
+    @apply transition-colors;
+  }
+  tbody tr:hover .td {
+    @apply bg-stone-50/70;
+  }
+  /* columns of figures align with tabular numerals (tables ONLY) */
+  .num {
+    @apply text-right tabular-nums;
+  }
+
+  /* ---------------------------------------------------------- badges */
+  /* status colours are reserved + always carry the label text */
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium;
+  }
+  .badge-good {
+    @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20;
+  }
+  .badge-info {
+    @apply bg-sky-50 text-sky-700 ring-1 ring-sky-600/20;
+  }
+  .badge-warn {
+    @apply bg-amber-50 text-amber-700 ring-1 ring-amber-600/25;
+  }
+  .badge-danger {
+    @apply bg-red-50 text-red-700 ring-1 ring-red-600/20;
+  }
+  .badge-neutral {
+    @apply bg-stone-100 text-stone-600 ring-1 ring-stone-500/15;
+  }
+
+  /* ---------------------------------------------------------- misc */
+  .page-title {
+    @apply font-display text-2xl font-semibold tracking-tight text-stone-900;
+  }
+  .section-title {
+    @apply text-sm font-semibold text-stone-900;
+  }
+  .hint {
+    @apply text-xs text-stone-400;
   }
 }

@@ -12,6 +12,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { api, apiBlob, API_URL, inr, session } from '@/lib/api';
+import { Badge, EmptyState, PageHeader } from '@/components/ui';
 
 interface Customer {
   id: string;
@@ -142,7 +143,7 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Customers</h1>
+      <PageHeader title="Customers" description="One customer, their whole history — system documents and uploaded paper bills" />
       {msg && <p className="text-sm text-amber-700">{msg}</p>}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(280px,1fr)_2fr]">
@@ -170,7 +171,7 @@ export default function CustomersPage() {
         {selected ? (
           <div className="space-y-6">
             <section className="card">
-              <h2 className="font-medium">{selected.name}</h2>
+              <h2 className="font-display text-lg font-semibold">{selected.name}</h2>
               <p className="mt-1 text-sm text-neutral-500">
                 {selected.phone} · state {selected.stateCode}
                 {selected.gstin ? ` · GSTIN ${selected.gstin}` : ''}
@@ -184,17 +185,17 @@ export default function CustomersPage() {
             </section>
 
             <section className="card">
-              <h3 className="mb-2 font-medium">Documents issued here ({docs.length})</h3>
-              {docs.length === 0 && <p className="text-sm text-neutral-400">none yet</p>}
+              <h3 className="section-title mb-3">Documents issued here ({docs.length})</h3>
+              {docs.length === 0 && <EmptyState>no documents issued to this customer yet</EmptyState>}
               <table className="w-full">
                 <tbody>
                   {docs.map((d) => (
                     <tr key={d.id}>
                       <td className="td font-mono text-xs">{d.docNumber}</td>
-                      <td className="td">{d.docType}</td>
-                      <td className="td">{d.status}</td>
+                      <td className="td"><Badge status={d.docType} /></td>
+                      <td className="td"><Badge status={d.status} /></td>
                       <td className="td">{new Date(d.issuedAt).toLocaleDateString()}</td>
-                      <td className="td text-right">{inr(d.grandTotalPaise)}</td>
+                      <td className="td num font-medium">{inr(d.grandTotalPaise)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -202,7 +203,7 @@ export default function CustomersPage() {
             </section>
 
             <section className="card">
-              <h3 className="mb-2 font-medium">Paper bills ({bills.length})</h3>
+              <h3 className="section-title mb-3">Paper bills ({bills.length})</h3>
               <form onSubmit={upload} className="mb-3 flex flex-wrap items-center gap-2">
                 <input
                   type="file"
@@ -216,7 +217,7 @@ export default function CustomersPage() {
                   {busy ? 'Uploading…' : 'Upload'}
                 </button>
               </form>
-              {bills.length === 0 && <p className="text-sm text-neutral-400">no paper bills uploaded yet</p>}
+              {bills.length === 0 && <EmptyState>no paper bills uploaded yet — photograph an old bill and upload it here</EmptyState>}
               <table className="w-full">
                 <tbody>
                   {bills.map((b) => (
@@ -229,14 +230,14 @@ export default function CustomersPage() {
                       </td>
                       <td className="td">
                         <div className="flex gap-1">
-                          <button className="btn-secondary" onClick={() => void view(b)}>view</button>
+                          <button className="btn-secondary btn-xs" onClick={() => void view(b)}>view</button>
                           {b.mimeType.startsWith('image/') && (
-                            <button className="btn-secondary" disabled={reading === b.id} onClick={() => void readBill(b)}>
+                            <button className="btn-secondary btn-xs" disabled={reading === b.id} onClick={() => void readBill(b)}>
                               {reading === b.id ? 'reading…' : b.extracted ? 're-read' : 'read (OCR)'}
                             </button>
                           )}
                           {b.extracted && (
-                            <button className="btn-secondary" onClick={() => setShowExtract(b)}>fields</button>
+                            <button className="btn-secondary btn-xs" onClick={() => setShowExtract(b)}>fields</button>
                           )}
                         </div>
                       </td>
@@ -246,7 +247,7 @@ export default function CustomersPage() {
               </table>
 
               {showExtract?.extracted && (
-                <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm">
+                <div className="mt-4 rounded-xl border border-gold-200 bg-gold-50 p-4 text-sm">
                   <div className="mb-2 flex items-center justify-between">
                     <span className="font-medium">Read from “{showExtract.fileName}” — review before using</span>
                     <button className="text-xs text-neutral-500" onClick={() => setShowExtract(null)}>close</button>

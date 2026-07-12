@@ -1,8 +1,13 @@
 'use client';
 
-/** Dashboard — live board rates + dual-unit stock position. */
+/**
+ * Dashboard — board-rate stat tiles + dual-unit stock position.
+ * Stat-tile values are sans semibold with proportional figures; the
+ * tabular-nums treatment is reserved for table columns.
+ */
 import { useEffect, useState } from 'react';
 import { api, inr } from '@/lib/api';
+import { Badge, PageHeader, StatTile } from '@/components/ui';
 
 interface Metal {
   id: string;
@@ -42,57 +47,68 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Dashboard</h1>
+    <div>
+      <PageHeader title="Dashboard" description="Today’s board rates and the live stock position" />
 
-      <section className="card">
-        <h2 className="mb-3 font-medium">Board rates (per 10 g)</h2>
+      <section className="mb-6">
+        <h2 className="section-title mb-3">Board rates (per 10 g)</h2>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {metals.flatMap((m) =>
             m.purities.map((p) => {
               const r = latest.get(`${m.id}:${p.id}`);
               return (
-                <div key={p.id} className="rounded border border-neutral-200 p-3">
-                  <div className="text-xs text-neutral-500">
-                    {m.name} {p.label}
-                  </div>
-                  <div className="text-lg font-semibold">{r ? inr(r.ratePaisePer10g) : '—'}</div>
-                  {r && <div className="text-[10px] text-neutral-400">{r.source}</div>}
-                </div>
+                <StatTile
+                  key={p.id}
+                  label={`${m.name} ${p.label}`}
+                  value={r ? inr(r.ratePaisePer10g) : '—'}
+                  foot={r ? <Badge status={r.source} /> : 'no rate fixed'}
+                />
               );
             }),
           )}
         </div>
       </section>
 
-      <section className="card">
-        <h2 className="mb-3 font-medium">Stock position</h2>
-        {summary && (
-          <>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="card">
+          <h2 className="section-title mb-3">Stock position</h2>
+          {summary && summary.byStatus.length > 0 ? (
             <table className="w-full">
               <thead>
                 <tr>
                   <th className="th">Status</th>
-                  <th className="th">Items</th>
-                  <th className="th">Pieces</th>
+                  <th className="th num">Items</th>
+                  <th className="th num">Pieces</th>
                 </tr>
               </thead>
               <tbody>
                 {summary.byStatus.map((row, i) => (
                   <tr key={i}>
-                    <td className="td">{row.status}</td>
-                    <td className="td">{row._count._all}</td>
-                    <td className="td">{row._sum.pieces ?? 0}</td>
+                    <td className="td">
+                      <Badge status={row.status} />
+                    </td>
+                    <td className="td num">{row._count._all}</td>
+                    <td className="td num">{row._sum.pieces ?? 0}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <p className="mt-3 text-sm text-neutral-500">
-              Total gross {summary.totalGrossWeightG} g · net {summary.totalNetWeightG} g
-            </p>
-          </>
-        )}
-      </section>
+          ) : (
+            <p className="hint">no stock yet</p>
+          )}
+        </section>
+
+        <section className="grid grid-cols-1 content-start gap-3">
+          <h2 className="section-title -mb-1">Metal on hand</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <StatTile label="Gross weight" value={summary ? `${summary.totalGrossWeightG} g` : '—'} />
+            <StatTile label="Net metal weight" value={summary ? `${summary.totalNetWeightG} g` : '—'} />
+          </div>
+          <p className="hint">
+            Dual-unit stock control: pieces reconcile the counting, grams reconcile the value.
+          </p>
+        </section>
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { api, inr } from '@/lib/api';
+import { Badge, PageHeader } from '@/components/ui';
 
 interface Metal {
   id: string;
@@ -82,11 +83,11 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Inventory</h1>
+      <PageHeader title="Inventory" description="Composite items, dual-unit stock and the append-only movement ledger" />
       {msg && <p className="text-sm text-amber-700">{msg}</p>}
 
       <section className="card">
-        <h2 className="mb-3 font-medium">New item (single metal component)</h2>
+        <h2 className="section-title mb-3">New item (single metal component)</h2>
         <form onSubmit={createItem} className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <input className="input" placeholder="ITEM-CODE" value={f.itemCode} onChange={(e) => setF({ ...f, itemCode: e.target.value })} />
           <input className="input" placeholder="name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
@@ -115,7 +116,7 @@ export default function InventoryPage() {
       </section>
 
       <section className="card">
-        <h2 className="mb-3 font-medium">Items</h2>
+        <h2 className="section-title mb-3">Items</h2>
         <table className="w-full">
           <thead>
             <tr>
@@ -128,12 +129,12 @@ export default function InventoryPage() {
               <tr key={it.id}>
                 <td className="td font-mono text-xs">{it.itemCode}</td>
                 <td className="td">{it.name}</td>
-                <td className="td">{it.status}</td>
+                <td className="td"><Badge status={it.status} /></td>
                 <td className="td">{it.pieces}</td>
                 <td className="td">{it.metalComponents.reduce((s, c) => s + Number(c.grossWeightG), 0).toFixed(3)}</td>
                 <td className="td">{it.stoneComponents.length ? `${it.stoneComponents.length} (${inr(it.stoneComponents.reduce((s, c) => s + c.valuePaise, 0))})` : '—'}</td>
                 <td className="td">
-                  <button className="btn-secondary" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
+                  <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
                     ledger
                   </button>
                 </td>
@@ -145,7 +146,7 @@ export default function InventoryPage() {
 
       {moves && (
         <section className="card">
-          <h2 className="mb-3 font-medium">Movement ledger</h2>
+          <h2 className="section-title mb-3">Movement ledger</h2>
           <table className="w-full">
             <thead>
               <tr><th className="th">At</th><th className="th">Type</th><th className="th">Pieces</th><th className="th">Gross g</th><th className="th">Note</th></tr>
@@ -154,7 +155,7 @@ export default function InventoryPage() {
               {moves.map((m) => (
                 <tr key={m.id}>
                   <td className="td">{new Date(m.at).toLocaleString()}</td>
-                  <td className="td">{m.movementType}</td>
+                  <td className="td"><Badge status={m.movementType} /></td>
                   <td className="td">{m.pieces}</td>
                   <td className="td">{m.grossWeightG}</td>
                   <td className="td text-neutral-500">{m.note}</td>

@@ -102,6 +102,20 @@ the full milestone list and ARCHITECTURE.md for the system map.
   Billing page. E2E-verified: photo → OCR fields (bill 1247, ₹44,500) in
   the browser, CSV download, salesperson 403.
 
+- **Post-MVP: web admin design system** — typography (Inter Variable for
+  UI/figures, Fraunces Variable reserved for brand + display headings;
+  both bundled from npm, no font CDN), a gold/stone token palette in
+  Tailwind v4 `@theme`, refined component layer (gradient buttons, soft
+  cards, focus rings, table hover, `.num` tabular columns), reserved
+  status badges (always labelled, mapped per domain status), stat tiles
+  per dataviz guidance (sans semibold values, proportional figures),
+  dark espresso sidebar with lucide icons + active gold indicator +
+  user chip, branded auth screens, shared `components/ui.tsx`
+  (PageHeader/Badge/StatTile/EmptyState) applied across all six pages.
+  Fixed the workspace dual-@types/react skew via tsconfig path pins.
+  Mobile accent aligned to the same gold. Verified in Chromium
+  (screenshots, zero page errors); all tests/typechecks green.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

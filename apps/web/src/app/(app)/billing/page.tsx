@@ -7,6 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { api, apiBlob, inr, session } from '@/lib/api';
+import { Badge, PageHeader } from '@/components/ui';
 
 interface Customer {
   id: string;
@@ -76,7 +77,7 @@ function ReportDownloads() {
 
   return (
     <section className="card">
-      <h2 className="mb-3 font-medium">Reports (CSV)</h2>
+      <h2 className="section-title mb-3">Reports (CSV)</h2>
       <div className="flex flex-wrap items-center gap-2">
         <input className="input w-40" type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
         <span className="text-sm text-neutral-400">to</span>
@@ -184,11 +185,11 @@ export default function BillingPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Billing</h1>
+      <PageHeader title="Billing" description="One cart — Tax Invoice, Estimate or Delivery Challan, with GST computed by the engine" />
       {msg && <p className="text-sm text-amber-700">{msg}</p>}
 
       <section className="card space-y-3">
-        <h2 className="font-medium">New document</h2>
+        <h2 className="section-title">New document</h2>
         <div className="flex flex-wrap gap-2">
           <select className="input w-64" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
             <option value="">customer…</option>
@@ -247,7 +248,7 @@ export default function BillingPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card">
-          <h2 className="mb-3 font-medium">Documents</h2>
+          <h2 className="section-title mb-3">Documents</h2>
           <table className="w-full">
             <thead>
               <tr><th className="th">Number</th><th className="th">Type</th><th className="th">Status</th><th className="th">Total</th></tr>
@@ -256,9 +257,9 @@ export default function BillingPage() {
               {docs.map((d) => (
                 <tr key={d.id} className="cursor-pointer hover:bg-neutral-50" onClick={() => void open(d.id)}>
                   <td className="td font-mono text-xs">{d.docNumber}</td>
-                  <td className="td">{d.docType}</td>
-                  <td className="td">{d.status}</td>
-                  <td className="td">{inr(d.grandTotalPaise)}</td>
+                  <td className="td"><Badge status={d.docType} /></td>
+                  <td className="td"><Badge status={d.status} /></td>
+                  <td className="td num font-medium">{inr(d.grandTotalPaise)}</td>
                 </tr>
               ))}
             </tbody>
@@ -268,7 +269,7 @@ export default function BillingPage() {
         {detail && (
           <section className="card">
             <div className="mb-3 flex items-center justify-between">
-              <h2 className="font-medium">{detail.docNumber} · {detail.status}</h2>
+              <h2 className="section-title flex items-center gap-2">{detail.docNumber} <Badge status={detail.status} /></h2>
               <div className="flex gap-2">
                 {detail.docType === 'ESTIMATE' && detail.status === 'ISSUED' && (
                   <button className="btn" onClick={() => void convert(detail.id)}>Convert → Invoice</button>

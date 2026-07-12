@@ -1,4 +1,9 @@
 import type { Metadata } from 'next';
+// Fonts are bundled from npm (@fontsource) — no external font CDN at
+// runtime. Inter carries all UI text and figures; Fraunces is reserved
+// for the brand wordmark and page display headings.
+import '@fontsource-variable/inter';
+import '@fontsource-variable/fraunces';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -10,7 +15,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-neutral-50 text-neutral-900 antialiased">{children}</body>
+      <body className="min-h-screen bg-stone-50 text-stone-900 antialiased">{children}</body>
     </html>
   );
 }

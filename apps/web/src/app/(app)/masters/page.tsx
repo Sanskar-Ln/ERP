@@ -5,7 +5,8 @@
  * (search + create), rate fix (manual board rate entry).
  */
 import { useEffect, useState } from 'react';
-import { api, inr } from '@/lib/api';
+import { api } from '@/lib/api';
+import { PageHeader } from '@/components/ui';
 
 interface Metal {
   id: string;
@@ -87,12 +88,12 @@ export default function MastersPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Master data</h1>
+      <PageHeader title="Master data" description="Metals & purities, board-rate fixing, customers and the GST rule matrix" />
       {msg && <p className="text-sm text-amber-700">{msg}</p>}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card">
-          <h2 className="mb-3 font-medium">Metals & purities</h2>
+          <h2 className="section-title mb-3">Metals & purities</h2>
           {metals.map((m) => (
             <div key={m.id} className="mb-2 text-sm">
               <span className="font-medium">{m.name}</span>{' '}
@@ -118,7 +119,7 @@ export default function MastersPage() {
         </section>
 
         <section className="card">
-          <h2 className="mb-3 font-medium">New customer</h2>
+          <h2 className="section-title mb-3">New customer</h2>
           <form onSubmit={createCustomer} className="space-y-2">
             <input className="input" placeholder="name" value={cName} onChange={(e) => setCName(e.target.value)} />
             <input className="input" placeholder="phone (+91…)" value={cPhone} onChange={(e) => setCPhone(e.target.value)} />
@@ -137,7 +138,7 @@ export default function MastersPage() {
       </div>
 
       <section className="card">
-        <h2 className="mb-3 font-medium">Tax-rule matrix</h2>
+        <h2 className="section-title mb-3">Tax-rule matrix</h2>
         <table className="w-full">
           <thead>
             <tr>
