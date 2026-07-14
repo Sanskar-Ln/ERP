@@ -126,6 +126,22 @@ the full milestone list and ARCHITECTURE.md for the system map.
   premium chips, soft shadows). Verified: tsc + expo export with all
   36 font/icon assets bundled.
 
+- **Post-MVP: mobile converted Expo → bare React Native (CLI)** — the
+  community-CLI native projects (`android/` + `ios/`) are now committed.
+  Expo modules swapped for community equivalents: expo-constants → plain
+  `src/lib/config.ts`; expo-status-bar → RN StatusBar +
+  react-native-safe-area-context; expo-font/@expo-google-fonts →
+  bundled `.ttf` in assets/fonts, native-linked via react-native-asset
+  (family names in theme.ts match filenames); expo-linear-gradient →
+  react-native-linear-gradient; expo-camera → react-native-vision-camera
+  (code scanner opt-in via VisionCamera_enableCodeScanner, minSdk 26,
+  CAMERA perm + NSCameraUsageDescription). Monorepo/pnpm-aware
+  metro.config.js. Verified: tsc, a production Metro bundle (2.8 MB),
+  `react-native config` autolinking all four native modules, and font
+  linking on both platforms. Native device builds NOT run here (no
+  Android SDK/Xcode) — that's on-machine. Same premium UI/design as
+  before, unchanged screens.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

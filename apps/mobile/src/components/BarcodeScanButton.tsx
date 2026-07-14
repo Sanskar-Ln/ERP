@@ -1,35 +1,51 @@
 /**
  * Camera barcode scanner (shared component, used by both views).
  *
- * A "Scan" button that opens a full-screen camera overlay (expo-camera).
- * It reads exactly the symbologies our tags are printed in — Code128 and
+ * Bare React Native uses react-native-vision-camera (not expo-camera).
+ * A "Scan" button opens a full-screen camera modal whose `useCodeScanner`
+ * reads exactly the symbologies our tags are printed in — Code128 and
  * DataMatrix (see the tagging module) — and hands the decoded payload
- * (`ITEMCODE#ordinal`) to the caller, which strips the ordinal where
- * only the item code matters.
+ * (`ITEMCODE#ordinal`) to the caller, which strips the ordinal where only
+ * the item code matters.
  *
- * Note: this is barcode DECODING, not OCR — the tag payload is machine-
- * readable by design. Falls back gracefully: if camera permission is
- * denied, staff can still type the code or use a USB/Bluetooth scanner
- * (keyboard wedge), which the input fields already accept.
+ * This is barcode DECODING, not OCR — the tag payload is machine-readable
+ * by design. Falls back gracefully: if the camera permission is denied,
+ * staff can still type the code or use a USB/Bluetooth scanner (keyboard
+ * wedge), which the input fields already accept.
+ *
+ * NATIVE SETUP (bare RN): vision-camera needs the camera permission
+ * declared — android/app/src/main/AndroidManifest.xml `<uses-permission
+ * android.permission.CAMERA/>` and ios Info.plist `NSCameraUsageDescription`
+ * (both added in this repo), plus a pod install for iOS.
  */
 import React, { useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
-import { CameraView, useCameraPermissions } from 'expo-camera';
+import { Camera, useCameraDevice, useCodeScanner } from 'react-native-vision-camera';
 import { ScanBarcode } from 'lucide-react-native';
 import { color, font, radius } from '../lib/theme';
 
 export default function BarcodeScanButton({ onScan }: { onScan: (code: string) => void }): React.JSX.Element {
   const [open, setOpen] = useState(false);
-  const [permission, requestPermission] = useCameraPermissions();
   const [denied, setDenied] = useState(false);
+  const device = useCameraDevice('back');
+
+  // Fires per detected barcode; guard so one scan doesn't spam the caller.
+  const codeScanner = useCodeScanner({
+    codeTypes: ['code-128', 'data-matrix'],
+    onCodeScanned: (codes) => {
+      const value = codes[0]?.value;
+      if (value) {
+        setOpen(false);
+        onScan(value);
+      }
+    },
+  });
 
   async function start(): Promise<void> {
-    if (!permission?.granted) {
-      const res = await requestPermission();
-      if (!res.granted) {
-        setDenied(true);
-        return;
-      }
+    const status = await Camera.requestCameraPermission();
+    if (status !== 'granted') {
+      setDenied(true);
+      return;
     }
     setDenied(false);
     setOpen(true);
@@ -44,15 +60,11 @@ export default function BarcodeScanButton({ onScan }: { onScan: (code: string) =
       {denied && <Text style={styles.denied}>camera denied — type the code instead</Text>}
       <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
         <View style={styles.overlay}>
-          <CameraView
-            style={StyleSheet.absoluteFill}
-            // Only the symbologies our tags use (tagging module).
-            barcodeScannerSettings={{ barcodeTypes: ['code128', 'datamatrix'] }}
-            onBarcodeScanned={({ data }) => {
-              setOpen(false);
-              onScan(data);
-            }}
-          />
+          {device ? (
+            <Camera style={StyleSheet.absoluteFill} device={device} isActive={open} codeScanner={codeScanner} />
+          ) : (
+            <Text style={styles.hint}>no camera device available</Text>
+          )}
           <View style={styles.frame} pointerEvents="none" />
           <Text style={styles.hint}>point at the tag barcode (Code128 / DataMatrix)</Text>
           <Pressable style={styles.close} onPress={() => setOpen(false)}>

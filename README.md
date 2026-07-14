@@ -79,17 +79,25 @@ accountants: the bills register (one row per document, taxes split
 CGST/SGST/IGST) and the GST summary (totals per rate bucket) for any
 date range.
 
-### 5. Mobile (`apps/mobile`)
+### 5. Mobile (`apps/mobile`) — bare React Native (CLI)
+
+The mobile app uses the React Native **CLI** (not Expo), so the native
+`android/` and `ios/` projects live in the repo. Running it needs the
+native toolchains: **Android Studio + SDK** for Android, **macOS + Xcode
++ CocoaPods** for iOS.
 
 ```sh
 # from the repo root (new terminal)
-pnpm --filter @erp/mobile start     # scan the QR with Expo Go
+pnpm --filter @erp/mobile start           # Metro dev server
+pnpm --filter @erp/mobile android         # build + run on an emulator/device
+# iOS (macOS only): cd apps/mobile/ios && pod install, then:
+pnpm --filter @erp/mobile ios
 ```
 
-**On a real phone/emulator** edit `apps/mobile/app.json` →
-`expo.extra.apiUrl` to your computer's LAN address, e.g.
-`http://192.168.1.10:3001/api/v1` (a device cannot reach your
-`localhost`), then restart Expo.
+Set the API base in `apps/mobile/src/lib/config.ts` — the Android emulator
+reaches the host at `http://10.0.2.2:3001/api/v1`; a real device needs the
+machine's LAN address (a device can't reach your `localhost`). See
+`apps/mobile/README.md` for the fonts, camera and pnpm-monorepo notes.
 
 The app picks its view from the login role:
 

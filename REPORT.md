@@ -13,7 +13,7 @@ monorepo with four packages:
 | `packages/shared` | TS + zod | enums, DTO schemas, integer-paise money math, fixed-point weight/purity math (mg / millicarat / ratti / fineness / wastage) |
 | `apps/api` | NestJS + Prisma + PostgreSQL | the entire backend (below) |
 | `apps/web` | Next.js 15 + Tailwind v4 | admin: dashboard, masters, inventory, tagging, billing |
-| `apps/mobile` | Expo RN | thin online-only client: login, rates, scan-to-price stock lookup, counter estimates |
+| `apps/mobile` | **Bare React Native (CLI)** | thin online-only client (committed android/ + ios/): two role-based views — manager (dashboard/stock/billing) & sales counter (rates/lookup/estimate) |
 
 ### Backend scope (apps/api)
 
@@ -89,8 +89,8 @@ pnpm dev
 pnpm --filter @erp/web dev
 #    login: owner@demo.in / demo1234  (manager@ / sales@ / accounts@ too)
 
-# 3) mobile (Expo Go; set expo.extra.apiUrl to your LAN address first)
-pnpm --filter @erp/mobile start
+# 3) mobile (bare RN CLI — needs Android Studio / Xcode; set API URL in src/lib/config.ts)
+pnpm --filter @erp/mobile android   # or: ios / start
 
 # tests / checks
 pnpm -r test && pnpm -r typecheck && pnpm -r run build
@@ -128,10 +128,15 @@ inter-state IGST), and the web admin was driven in headless Chromium.
 - No external metal-rate feed integration — `source: FEED` rows are
   accepted via the same endpoint; a poller is future work.
 - No printable PDF invoice (web renders totals; label sheets are HTML).
-- Mobile keeps the JWT in memory only; offline sync is design-ready
-  (UUIDs, append-only) but not implemented. Camera barcode scanning
-  (Code128/DataMatrix via expo-camera) IS implemented alongside
-  keyboard-wedge scanners.
+- Mobile is **bare React Native (CLI)**, not Expo: native android/ +
+  ios/ projects are committed; running needs Android Studio (and macOS +
+  Xcode for iOS) — there is no Expo Go / cloud-build shortcut. Verified
+  here via tsc + a production Metro bundle + autolinking config; native
+  device builds were not run in this environment. Camera barcode scanning
+  is react-native-vision-camera (Code128/DataMatrix); keyboard-wedge
+  scanners also work. JWT is in-memory; offline sync design-ready, not
+  implemented. Under pnpm, native builds may need a hoisted node_modules
+  (see apps/mobile/README).
 - Paper-bill OCR (tesseract.js, offline tessdata) extracts bill number,
   date, amounts/total, weights, rate and phones as a reviewed draft;
   PDFs are not rasterized (images only) and handwriting accuracy varies.

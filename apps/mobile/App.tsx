@@ -11,15 +11,14 @@
  * security. Shared screens live in src/screens/common/.
  *
  * Design: same brand as the web admin — Inter (all UI + figures) and
- * Fraunces (wordmark/titles only) loaded via expo-font from npm-bundled
- * @expo-google-fonts packages, gold accent, espresso tab bar with lucide
- * icons. Deliberately no navigation library — a state-based tab bar.
+ * Fraunces (wordmark/titles only), bundled as .ttf files and native-linked
+ * (bare RN has no runtime font loader — see README "Fonts"), gold accent,
+ * espresso tab bar with lucide icons. Deliberately no navigation library
+ * — a state-based tab bar.
  */
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
-import { useFonts, Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
-import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
+import { Pressable, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { LayoutDashboard, Package, ReceiptText, Coins, ScanBarcode, FilePlus2, LogOut, type LucideIcon } from 'lucide-react-native';
 import { session } from './src/lib/api';
 import { color, font } from './src/lib/theme';
@@ -52,28 +51,21 @@ const SALES_TABS: TabDef[] = [
 ];
 
 export default function App(): React.JSX.Element {
-  const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
-    Fraunces_600SemiBold,
-  });
+  return (
+    <SafeAreaProvider>
+      <Root />
+    </SafeAreaProvider>
+  );
+}
+
+function Root(): React.JSX.Element {
   const [authed, setAuthed] = useState(session.authed());
   const [tabKey, setTabKey] = useState<string | null>(null);
 
-  if (!fontsLoaded) {
-    return (
-      <View style={styles.splash}>
-        <ActivityIndicator color={color.gold500} size="large" />
-      </View>
-    );
-  }
-
   if (!authed) {
     return (
-      <SafeAreaView style={styles.root}>
-        <StatusBar style="dark" />
+      <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+        <StatusBar barStyle="dark-content" backgroundColor={color.bg} />
         <LoginScreen
           onLogin={() => {
             setTabKey(null); // first tab of whichever view the role gets
@@ -88,8 +80,8 @@ export default function App(): React.JSX.Element {
   const active = tabs.find((t) => t.key === tabKey) ?? tabs[0]!;
 
   return (
-    <SafeAreaView style={styles.root}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor={color.bg} />
       <View style={styles.body}>{active.render()}</View>
       <View style={styles.tabbar}>
         {tabs.map((t) => {
@@ -122,7 +114,6 @@ export default function App(): React.JSX.Element {
 }
 
 const styles = StyleSheet.create({
-  splash: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.espresso950 },
   root: { flex: 1, backgroundColor: color.bg },
   body: { flex: 1 },
   tabbar: {

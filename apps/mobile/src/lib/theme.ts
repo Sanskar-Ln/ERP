@@ -45,14 +45,20 @@ export const color = {
   neutralBg: '#f5f5f4',
 } as const;
 
-/** Font family names as registered by expo-font (see App.tsx useFonts). */
+/**
+ * Font families — the names match the bundled .ttf files in assets/fonts
+ * (Inter-Regular.ttf → family "Inter-Regular"). In bare RN there is no
+ * runtime font loader: `react-native-asset` links these files into the
+ * native projects at build time and they're referenced here by family
+ * name. See README "Fonts".
+ */
 export const font = {
-  regular: 'Inter_400Regular',
-  medium: 'Inter_500Medium',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
+  regular: 'Inter-Regular',
+  medium: 'Inter-Medium',
+  semibold: 'Inter-SemiBold',
+  bold: 'Inter-Bold',
   /** display serif — wordmark and screen titles ONLY, never figures */
-  display: 'Fraunces_600SemiBold',
+  display: 'Fraunces-SemiBold',
 } as const;
 
 export const radius = { sm: 8, md: 12, lg: 16, full: 999 } as const;

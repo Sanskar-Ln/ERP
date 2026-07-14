@@ -1,8 +1,10 @@
 {
-  "extends": "expo/tsconfig.base",
+  "extends": "@react-native/typescript-config/tsconfig.json",
   "compilerOptions": {
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noEmit": true,
+    "types": ["react", "react-native"]
   },
-  "include": ["index.ts", "App.tsx", "src"]
+  "include": ["index.js", "App.tsx", "src"]
 }

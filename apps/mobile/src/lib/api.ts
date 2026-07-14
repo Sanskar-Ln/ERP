@@ -7,10 +7,7 @@
  * machine's LAN address (e.g. http://192.168.1.10:3001/api/v1) — an
  * emulator/device cannot reach the host's localhost.
  */
-import Constants from 'expo-constants';
-
-const API_URL: string =
-  (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ?? 'http://localhost:3001/api/v1';
+import { API_URL } from './config';
 
 /** The logged-in user as returned by POST /auth/login. */
 export interface SessionUser {

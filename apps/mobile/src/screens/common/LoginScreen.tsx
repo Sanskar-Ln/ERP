@@ -6,7 +6,7 @@
  */
 import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import LinearGradient from 'react-native-linear-gradient';
 import { Gem } from 'lucide-react-native';
 import { api, session, type SessionUser } from '../../lib/api';
 import { color, font, radius, shadow } from '../../lib/theme';

@@ -1,34 +1,41 @@
 {
   "name": "@erp/mobile",
   "version": "0.1.0",
-  "description": "Expo React Native thin client for the jewellery ERP (online-only MVP)",
-  "main": "index.ts",
+  "description": "Bare React Native (CLI) thin client for the jewellery ERP — online-only",
   "private": true,
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "typecheck": "tsc --noEmit"
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "start": "react-native start",
+    "link-assets": "react-native-asset",
+    "typecheck": "tsc --noEmit",
+    "bundle:android": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output /tmp/erp-mobile.android.bundle --assets-dest /tmp/erp-mobile-assets"
   },
   "dependencies": {
-    "@babel/runtime": "^8.0.0",
     "@erp/shared": "workspace:*",
-    "@expo-google-fonts/fraunces": "^0.4.1",
-    "@expo-google-fonts/inter": "^0.4.2",
-    "expo": "~52.0.0",
-    "expo-camera": "~16.0.18",
-    "expo-constants": "~17.0.0",
-    "expo-font": "~13.0.4",
-    "expo-linear-gradient": "~14.0.2",
-    "expo-status-bar": "~2.0.0",
     "lucide-react-native": "^1.24.0",
     "react": "18.3.1",
     "react-native": "0.76.6",
-    "react-native-svg": "15.8.0"
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-safe-area-context": "^4.14.0",
+    "react-native-svg": "15.8.0",
+    "react-native-vision-camera": "^4.6.4"
   },
   "devDependencies": {
-    "@babel/core": "^7.25.0",
-    "@types/react": "~18.3.12",
-    "typescript": "^5.7.3"
+    "@babel/core": "^7.25.2",
+    "@babel/preset-env": "^7.25.3",
+    "@babel/runtime": "^7.25.0",
+    "@react-native-community/cli": "15.0.1",
+    "@react-native-community/cli-platform-android": "15.0.1",
+    "@react-native-community/cli-platform-ios": "15.0.1",
+    "@react-native/babel-preset": "0.76.6",
+    "@react-native/metro-config": "0.76.6",
+    "@react-native/typescript-config": "0.76.6",
+    "@types/react": "^18.2.6",
+    "react-native-asset": "^2.1.1",
+    "typescript": "5.0.4"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
