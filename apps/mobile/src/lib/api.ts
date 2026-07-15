@@ -68,15 +68,3 @@ export function inr(paise: number): string {
   return `${sign}₹${grouped}.${p}`;
 }
 
-/** Shared styling tokens so every screen stays visually consistent.
- *  `amber` matches the web admin's gold-600 — one brand across clients. */
-export const ui = {
-  amber: '#b76f1f',
-  border: '#e7e5e4',
-  muted: '#78716c',
-  faint: '#a8a29e',
-  text: '#44403c',
-  bg: '#fafaf9',
-  red: '#dc2626',
-  green: '#15803d',
-} as const;
