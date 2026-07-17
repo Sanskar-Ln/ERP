@@ -101,6 +101,9 @@ export default function BillingPage() {
   const [msg, setMsg] = useState('');
 
   const [customerId, setCustomerId] = useState('');
+  // Recurring-customer view: ALL previous bills of the selected customer,
+  // shown right in the cart builder — same behaviour as the mobile app.
+  const [history, setHistory] = useState<Doc[]>([]);
   const [cartItemIds, setCartItemIds] = useState<string[]>([]);
   const [pickItem, setPickItem] = useState('');
   // optional old-gold exchange
@@ -118,6 +121,15 @@ export default function BillingPage() {
     void api<Metal[]>('GET', '/metals').then(setMetals);
     load();
   }, []);
+
+  // load the customer's bill history the moment they're picked
+  useEffect(() => {
+    if (!customerId) {
+      setHistory([]);
+      return;
+    }
+    void api<Doc[]>('GET', `/documents?customerId=${customerId}`).then(setHistory);
+  }, [customerId]);
 
   async function issue(docType: 'TAX_INVOICE' | 'ESTIMATE' | 'DELIVERY_CHALLAN') {
     const user = JSON.parse(localStorage.getItem('erp.user') ?? '{}') as { branchId?: string };
@@ -148,6 +160,7 @@ export default function BillingPage() {
       setCartItemIds([]);
       load();
       setDetail(doc);
+      void api<Doc[]>('GET', `/documents?customerId=${customerId}`).then(setHistory);
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'failed');
     }
@@ -189,13 +202,13 @@ export default function BillingPage() {
       <section className="card space-y-3">
         <h2 className="section-title">New document</h2>
         <div className="flex flex-wrap gap-2">
-          <select className="input w-64" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
+          <select className="input w-full sm:w-64" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
             <option value="">customer…</option>
             {customers.map((c) => (
               <option key={c.id} value={c.id}>{c.name} ({c.phone})</option>
             ))}
           </select>
-          <select className="input w-72" value={pickItem} onChange={(e) => setPickItem(e.target.value)}>
+          <select className="input w-full sm:w-72" value={pickItem} onChange={(e) => setPickItem(e.target.value)}>
             <option value="">add item…</option>
             {items.filter((i) => !cartItemIds.includes(i.id)).map((i) => (
               <option key={i.id} value={i.id}>{i.itemCode} — {i.name}</option>
@@ -213,6 +226,33 @@ export default function BillingPage() {
             Add to cart
           </button>
         </div>
+        {customerId && history.length > 0 && (
+          <div className="rounded-lg border-l-2 border-gold-200 bg-gold-50/60 px-3 py-2">
+            <p className="mb-1 text-xs font-medium text-gold-800">
+              Previous bills of this customer ({history.length})
+            </p>
+            <ul className="space-y-1">
+              {history.slice(0, 6).map((h) => (
+                <li key={h.id}>
+                  <button
+                    className="flex w-full flex-wrap items-center gap-2 rounded px-1 py-0.5 text-left text-xs text-gold-700 hover:bg-gold-100/60"
+                    onClick={() => void open(h.id)}
+                  >
+                    <span className="font-mono">{h.docNumber}</span>
+                    <Badge status={h.status} />
+                    <span className="ml-auto font-medium tabular-nums">{inr(h.grandTotalPaise)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {history.length > 6 && (
+              <p className="mt-1 text-[11px] text-gold-700/70">…and {history.length - 6} more on the Customers page</p>
+            )}
+          </div>
+        )}
+        {customerId && history.length === 0 && (
+          <p className="text-xs text-stone-400">first bill for this customer</p>
+        )}
         {cartItemIds.length > 0 && (
           <p className="text-sm">
             cart: {cartItemIds.map((id) => items.find((i) => i.id === id)?.itemCode ?? id).join(', ')}{' '}
@@ -247,7 +287,7 @@ export default function BillingPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card">
           <h2 className="section-title mb-3">Documents</h2>
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
             <thead>
               <tr><th className="th">Number</th><th className="th">Type</th><th className="th">Status</th><th className="th">Total</th></tr>
             </thead>
@@ -261,7 +301,7 @@ export default function BillingPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </section>
 
         {detail && (
@@ -277,7 +317,7 @@ export default function BillingPage() {
                 )}
               </div>
             </div>
-            <table className="w-full">
+            <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
               <thead>
                 <tr><th className="th">#</th><th className="th">Description</th><th className="th">HSN</th><th className="th">Value</th></tr>
               </thead>
@@ -291,7 +331,7 @@ export default function BillingPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
             <div className="mt-3 space-y-1 text-sm">
               <div>Subtotal: {inr(detail.subtotalPaise)}</div>
               {detail.discountPaise > 0 && <div>Discount: −{inr(detail.discountPaise)}</div>}

@@ -157,6 +157,18 @@ the full milestone list and ARCHITECTURE.md for the system map.
   Chromium shells for both roles (zero errors), 86 tests, 4 typechecks,
   mobile production bundle.
 
+- **Post-MVP: responsive app-like web + per-customer billing** — the web
+  shell now mirrors the RN app on phones (espresso top bar + bottom icon
+  tab bar with gold active pill, sidebar on lg+); Billing loads the
+  selected customer's full bill history inline (clickable → detail),
+  refreshed after issuing; all tables wrapped in overflow containers
+  with `.card` min-w-0 (fixed a 148px phone overflow on every page);
+  fixed-width inputs made responsive. Verified by a 27-check Playwright
+  sweep at 390px + 1440px for both roles: shell swap, rate-fix E2E
+  (₹93,500 tile update), history panel + detail open, customer docs +
+  paper bills, ledger, OCR field mapping, OPS 4-tab bar — plus a 6-page
+  zero-overflow pass. All green.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

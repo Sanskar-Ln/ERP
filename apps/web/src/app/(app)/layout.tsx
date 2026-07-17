@@ -43,6 +43,16 @@ const OPS_NAV: [href: string, label: string, icon: LucideIcon][] = [
 /** Pages an OPS user must not land on (deep links redirect to dashboard). */
 const ADMIN_ONLY_PATHS = ['/masters', '/tagging'];
 
+/** Compact labels for the phone bottom tab bar. */
+const SHORT_LABEL: Record<string, string> = {
+  Dashboard: 'Home',
+  'Master data': 'Masters',
+  Customers: 'Customers',
+  Inventory: 'Stock',
+  'Tags & labels': 'Tags',
+  Billing: 'Billing',
+};
+
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -74,8 +84,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     .toUpperCase();
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="fixed inset-y-0 flex w-60 flex-col bg-espresso-950 text-stone-300">
+    <div className="min-h-screen">
+      {/* ---------- desktop sidebar (hidden on phones) ---------- */}
+      <aside className="fixed inset-y-0 hidden w-60 flex-col bg-espresso-950 text-stone-300 lg:flex">
         {/* brand */}
         <div className="flex items-center gap-2.5 px-5 pb-5 pt-6">
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 text-espresso-950 shadow">
@@ -131,9 +142,52 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
 
-      <main className="ml-60 flex-1 px-8 py-7">
+      {/* ---------- mobile top bar (app-style header) ---------- */}
+      <header className="sticky top-0 z-20 flex items-center justify-between bg-espresso-950 px-4 py-3 lg:hidden">
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 text-espresso-950">
+            <Gem size={14} strokeWidth={2.2} />
+          </span>
+          <span className="font-display text-[15px] font-semibold text-gold-100">Jewellery ERP</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gold-900/60 text-[10px] font-semibold text-gold-200 ring-1 ring-gold-700/40">
+            {initials}
+          </span>
+          <button
+            title="Sign out"
+            className="rounded-md p-1.5 text-stone-500 active:bg-white/10"
+            onClick={() => {
+              session.clear();
+              router.replace('/login');
+            }}
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+      </header>
+
+      {/* content: room for the bottom tab bar on phones */}
+      <main className="px-4 pb-24 pt-5 lg:ml-60 lg:px-8 lg:py-7">
         <div className="mx-auto max-w-6xl">{children}</div>
       </main>
+
+      {/* ---------- mobile bottom tab bar (mirrors the RN app) ---------- */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-white/5 bg-espresso-950 pb-[env(safe-area-inset-bottom)] lg:hidden">
+        {nav.map(([href, label, Icon]) => {
+          const active = pathname.startsWith(href);
+          return (
+            <Link key={href} href={href} className="flex flex-1 flex-col items-center gap-0.5 pb-2.5 pt-2">
+              <span className={`rounded-full px-3.5 py-1 transition-colors ${active ? 'bg-gold-400/15' : ''}`}>
+                <Icon size={19} strokeWidth={2} className={active ? 'text-gold-300' : 'text-stone-500'} />
+              </span>
+              <span className={`text-[10px] font-medium ${active ? 'text-gold-300' : 'text-stone-500'}`}>
+                {SHORT_LABEL[label] ?? label}
+              </span>
+            </Link>
+          );
+        })}
+      </nav>
     </div>
   );
 }

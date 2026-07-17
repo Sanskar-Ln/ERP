@@ -187,7 +187,7 @@ export default function CustomersPage() {
             <section className="card">
               <h3 className="section-title mb-3">Documents issued here ({docs.length})</h3>
               {docs.length === 0 && <EmptyState>no documents issued to this customer yet</EmptyState>}
-              <table className="w-full">
+              <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
                 <tbody>
                   {docs.map((d) => (
                     <tr key={d.id}>
@@ -199,7 +199,7 @@ export default function CustomersPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
             </section>
 
             <section className="card">
@@ -211,14 +211,14 @@ export default function CustomersPage() {
                   className="text-sm"
                   onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                 />
-                <input className="input w-56" placeholder="note (e.g. old bill 2019)" value={note} onChange={(e) => setNote(e.target.value)} />
-                <input className="input w-40" type="date" title="date on the bill" value={billDate} onChange={(e) => setBillDate(e.target.value)} />
+                <input className="input w-full sm:w-56" placeholder="note (e.g. old bill 2019)" value={note} onChange={(e) => setNote(e.target.value)} />
+                <input className="input w-full sm:w-40" type="date" title="date on the bill" value={billDate} onChange={(e) => setBillDate(e.target.value)} />
                 <button className="btn" disabled={!file || busy}>
                   {busy ? 'Uploading…' : 'Upload'}
                 </button>
               </form>
               {bills.length === 0 && <EmptyState>no paper bills uploaded yet — photograph an old bill and upload it here</EmptyState>}
-              <table className="w-full">
+              <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
                 <tbody>
                   {bills.map((b) => (
                     <tr key={b.id}>
@@ -244,7 +244,7 @@ export default function CustomersPage() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
 
               {showExtract?.extracted && (
                 <div className="mt-4 rounded-xl border border-gold-200 bg-gold-50 p-4 text-sm">

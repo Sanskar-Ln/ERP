@@ -101,14 +101,14 @@ export default function TaggingPage() {
 
       <section className="card">
         <h2 className="section-title mb-3">Tag a piece</h2>
-        <form onSubmit={createTag} className="flex gap-2">
-          <select className="input w-72" value={itemId} onChange={(e) => setItemId(e.target.value)}>
+        <form onSubmit={createTag} className="flex flex-wrap gap-2">
+          <select className="input w-full sm:w-72" value={itemId} onChange={(e) => setItemId(e.target.value)}>
             <option value="">item…</option>
             {items.map((i) => (
               <option key={i.id} value={i.id}>{i.itemCode} — {i.name}</option>
             ))}
           </select>
-          <select className="input w-40" value={symbology} onChange={(e) => setSymbology(e.target.value)}>
+          <select className="input w-full sm:w-40" value={symbology} onChange={(e) => setSymbology(e.target.value)}>
             <option value="CODE128">Code128</option>
             <option value="DATAMATRIX">DataMatrix</option>
           </select>
@@ -120,10 +120,10 @@ export default function TaggingPage() {
       </section>
 
       <section className="card">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="section-title">Tags</h2>
-          <div className="flex items-center gap-2">
-            <select className="input w-56" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
+          <div className="flex flex-wrap items-center gap-2">
+            <select className="input w-full sm:w-56" value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
               <option value="">template (auto-create)…</option>
               {templates.map((t) => (
                 <option key={t.id} value={t.id}>{t.name} ({t.widthMm}×{t.heightMm}mm)</option>
@@ -134,7 +134,7 @@ export default function TaggingPage() {
             </button>
           </div>
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
           <thead>
             <tr><th className="th"></th><th className="th">Tag code</th><th className="th">Symbology</th><th className="th"></th></tr>
           </thead>
@@ -161,7 +161,7 @@ export default function TaggingPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
         {preview && <img src={preview} alt="barcode preview" className="mt-4 h-16" />}
       </section>
     </div>

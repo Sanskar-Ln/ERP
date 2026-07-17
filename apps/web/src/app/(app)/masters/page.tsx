@@ -104,7 +104,7 @@ export default function MastersPage() {
 
       <section className="card">
         <h2 className="section-title mb-3">Tax-rule matrix</h2>
-        <table className="w-full">
+        <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
           <thead>
             <tr>
               <th className="th">Component</th>
@@ -129,7 +129,7 @@ export default function MastersPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </section>
     </div>
   );

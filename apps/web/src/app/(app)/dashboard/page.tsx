@@ -42,13 +42,13 @@ function RateFix({ metals, onFixed }: { metals: Metal[]; onFixed: () => void }) 
 
   return (
     <form onSubmit={fix} className="flex flex-wrap items-center gap-2">
-      <select className="input w-44" value={purityId} onChange={(e) => setPurityId(e.target.value)}>
+      <select className="input w-40 sm:w-44" value={purityId} onChange={(e) => setPurityId(e.target.value)}>
         <option value="">purity…</option>
         {metals.flatMap((m) => m.purities.map((p) => (
           <option key={p.id} value={p.id}>{m.name} {p.label}</option>
         )))}
       </select>
-      <input className="input w-32" placeholder="₹ per 10 g" value={rupees} onChange={(e) => setRupees(e.target.value)} />
+      <input className="input w-28 sm:w-32" placeholder="₹ per 10 g" value={rupees} onChange={(e) => setRupees(e.target.value)} />
       <button className="btn" disabled={!purityId || !rupees}>Fix rate</button>
       {msg && <span className="text-sm text-amber-700">{msg}</span>}
     </form>
@@ -122,7 +122,7 @@ export default function DashboardPage() {
         <section className="card">
           <h2 className="section-title mb-3">Stock position</h2>
           {summary && summary.byStatus.length > 0 ? (
-            <table className="w-full">
+            <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
               <thead>
                 <tr>
                   <th className="th">Status</th>
@@ -141,7 +141,7 @@ export default function DashboardPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           ) : (
             <p className="hint">no stock yet</p>
           )}

@@ -119,7 +119,7 @@ export default function InventoryPage() {
 
       <section className="card">
         <h2 className="section-title mb-3">Items</h2>
-        <table className="w-full">
+        <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
           <thead>
             <tr>
               <th className="th">Code</th><th className="th">Name</th><th className="th">Status</th>
@@ -143,13 +143,13 @@ export default function InventoryPage() {
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </section>
 
       {moves && (
         <section className="card">
           <h2 className="section-title mb-3">Movement ledger</h2>
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
             <thead>
               <tr><th className="th">At</th><th className="th">Type</th><th className="th">Pieces</th><th className="th">Gross g</th><th className="th">Note</th></tr>
             </thead>
@@ -164,7 +164,7 @@ export default function InventoryPage() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </section>
       )}
     </div>

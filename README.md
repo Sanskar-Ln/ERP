@@ -62,6 +62,12 @@ Swagger docs at <http://localhost:3001/api/docs>.
 pnpm --filter @erp/web dev
 ```
 
+The web admin is **fully responsive with an app-like feel**: on phones it
+mirrors the mobile app — espresso top bar, bottom tab bar with icons —
+while desktops get the full sidebar. Billing shows the selected
+customer's complete bill history inline (the recurring-customer view),
+same as the app.
+
 Open <http://localhost:3000> and sign in (logins below), or create a brand
 new organisation at <http://localhost:3000/register> — every registration
 provisions a fully isolated tenant (own branches, staff, stock, billing).
