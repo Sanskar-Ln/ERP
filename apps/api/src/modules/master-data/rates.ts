@@ -58,7 +58,7 @@ export class RatesController {
 
   /** Post a rate row — FEED tick (integration) or MANUAL_FIX (board rate). */
   @Post()
-  @Roles(Role.MANAGER, Role.ACCOUNTANT)
+  @Roles(Role.OPS)
   @ApiZodBody(zCreateMetalRate)
   async create(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateMetalRate)) body: CreateMetalRate) {
     const db = this.tenancy.client(user.tenantId);

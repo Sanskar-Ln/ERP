@@ -8,9 +8,9 @@
  *     totals per GST bucket (label × rate) — the numbers a GST filing
  *     (GSTR-1 summary) starts from.
  *
- * Values are exported in RUPEES with two decimals (managers open these in
- * Excel/Sheets); internally everything stays integer paise and is only
- * formatted at this boundary. RBAC: MANAGER or ACCOUNTANT (OWNER passes).
+ * Values are exported in RUPEES with two decimals (spreadsheet-friendly);
+ * internally everything stays integer paise and is only formatted at this
+ * boundary. RBAC: ADMIN only.
  */
 import { Controller, Get, Header, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -40,7 +40,7 @@ const rupees = (paise: number | bigint): string => (Number(paise) / 100).toFixed
 @ApiTags('reports')
 @ApiBearerAuth()
 @Controller('reports')
-@Roles(Role.MANAGER, Role.ACCOUNTANT)
+@Roles(Role.ADMIN)
 export class ReportsController {
   constructor(private readonly tenancy: TenancyService) {}
 

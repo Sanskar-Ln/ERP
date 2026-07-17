@@ -161,7 +161,7 @@ export class ItemsController {
   ) {}
 
   @Post('items')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateItem)
   create(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateItem)) body: CreateItem) {
     return this.items.createItem(user, body);
@@ -247,7 +247,7 @@ export class ItemsController {
   }
 
   @Post('lots')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateLot)
   createLot(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateLot)) body: CreateLot) {
     return this.tenancy.client(user.tenantId).lot.create({

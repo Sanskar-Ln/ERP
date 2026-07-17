@@ -144,14 +144,14 @@ export class MovementsController {
   }
 
   @Post()
-  @Roles(Role.MANAGER)
+  @Roles(Role.OPS)
   @ApiZodBody(zCreateStockMovement)
   post(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateStockMovement)) body: CreateStockMovement) {
     return this.movements.post(user, body);
   }
 
   @Post(':id/reverse')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zReverseBody)
   reverse(
     @CurrentUser() user: JwtClaims,

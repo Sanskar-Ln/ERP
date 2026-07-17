@@ -1,9 +1,9 @@
 /**
  * Auth endpoints:
- * - POST /auth/register  (public) — SaaS signup: tenant + branch + owner
+ * - POST /auth/register  (public) — SaaS signup: tenant + branch + admin
  * - POST /auth/login     (public) — JWT issuance
  * - GET  /auth/me                 — verified claims of the caller
- * - POST /auth/users              — create staff user (OWNER/MANAGER)
+ * - POST /auth/users              — create staff user (ADMIN)
  */
 import { Body, Controller, Get, HttpCode, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -53,7 +53,7 @@ export class AuthController {
   }
 
   @Post('users')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateUser)
   createUser(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateUser)) body: CreateUser) {
     return this.auth.createUser(user.tenantId, user.sub, body);

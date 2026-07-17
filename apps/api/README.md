@@ -45,7 +45,7 @@ pnpm test                        # vitest unit tests (domain + platform)
 
 ## Auth flow
 
-`POST /auth/register` (public SaaS signup) → tenant + HQ branch + OWNER →
+`POST /auth/register` (public SaaS signup) → tenant + HQ branch + ADMIN →
 `POST /auth/login` → `{ accessToken }` → `Authorization: Bearer …`.
-Claims: `sub`, `tenantId`, `role`, `branchId`. RBAC: `@Roles(...)` per
-route; OWNER passes all checks.
+Claims: `sub`, `tenantId`, `role`, `branchId`. RBAC: two roles — ADMIN
+(bypasses every `@Roles` check) and OPS (day-to-day writes only).

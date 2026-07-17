@@ -1,12 +1,12 @@
 /**
  * Jewellery ERP mobile — thin online-only client with TWO role-based views:
  *
- * - MANAGER VIEW (role OWNER/MANAGER): src/screens/manager/ — Dashboard,
+ * - ADMIN VIEW (role ADMIN): src/screens/manager/ — Dashboard,
  *   Stock (create/adjust/receive transfers), full Billing, Rates.
  * - SALES (COUNTER) VIEW: src/screens/sales/ — Rates, scan-to-price
  *   Lookup, Estimate creation.
  *
- * Which view mounts is decided by the login role (session.isManager());
+ * Which view mounts is decided by the login role (session.isAdmin());
  * the API enforces the same RBAC server-side, so the split is UX, not
  * security. Shared screens live in src/screens/common/.
  *
@@ -76,7 +76,7 @@ function Root(): React.JSX.Element {
     );
   }
 
-  const tabs = session.isManager() ? MANAGER_TABS : SALES_TABS;
+  const tabs = session.isAdmin() ? MANAGER_TABS : SALES_TABS;
   const active = tabs.find((t) => t.key === tabKey) ?? tabs[0]!;
 
   return (

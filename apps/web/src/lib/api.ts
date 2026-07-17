@@ -38,6 +38,12 @@ export const session = {
   },
 };
 
+/**
+ * Role check for UI gating only — the API enforces the same rules
+ * server-side (RolesGuard), so hiding a control here is UX, not security.
+ */
+export const isAdmin = (): boolean => session.user()?.role === 'ADMIN';
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,

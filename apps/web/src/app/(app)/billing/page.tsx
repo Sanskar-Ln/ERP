@@ -6,7 +6,7 @@
  * documents, and drill into one (tax lines, convert, cancel).
  */
 import { useEffect, useState } from 'react';
-import { api, apiBlob, inr, session } from '@/lib/api';
+import { api, apiBlob, inr, isAdmin } from '@/lib/api';
 import { Badge, PageHeader } from '@/components/ui';
 
 interface Customer {
@@ -45,10 +45,9 @@ interface DocDetail extends Doc {
 }
 
 /**
- * CSV report downloads for the manager/accountant: the period sales
- * register and the GST summary. Files are JWT-protected, so they are
- * fetched as blobs and saved via a temporary anchor. Hidden for
- * salesperson logins (the API enforces the same RBAC anyway).
+ * CSV report downloads (ADMIN only): the period sales register and the
+ * GST summary. Files are JWT-protected, so they are fetched as blobs and
+ * saved via a temporary anchor. The API enforces the same RBAC.
  */
 function ReportDownloads() {
   const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1)
@@ -58,8 +57,7 @@ function ReportDownloads() {
   const [from, setFrom] = useState(firstOfMonth);
   const [to, setTo] = useState(today);
   const [err, setErr] = useState('');
-  const role = session.user()?.role;
-  if (role === 'SALESPERSON') return null;
+  if (!isAdmin()) return null; // reports are ADMIN-only (API enforces too)
 
   async function download(kind: 'documents' | 'gst-summary') {
     setErr('');
@@ -274,7 +272,7 @@ export default function BillingPage() {
                 {detail.docType === 'ESTIMATE' && detail.status === 'ISSUED' && (
                   <button className="btn" onClick={() => void convert(detail.id)}>Convert → Invoice</button>
                 )}
-                {detail.status === 'ISSUED' && (
+                {detail.status === 'ISSUED' && isAdmin() && (
                   <button className="btn-secondary" onClick={() => void cancel(detail.id)}>Cancel</button>
                 )}
               </div>

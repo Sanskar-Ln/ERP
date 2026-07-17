@@ -1,8 +1,8 @@
 /**
  * Catalog master data: metals & purities, stone types, HSN codes.
  *
- * Reads are open to all authenticated roles; writes require MANAGER
- * (OWNER always passes RBAC). These masters are referenced by inventory
+ * Reads are open to all authenticated roles; writes require ADMIN
+ * (masters are setup data, not day-to-day). These masters are referenced by inventory
  * and billing, so they are create-only in the MVP (no deletes — rows may
  * already be referenced by immutable documents).
  */
@@ -44,7 +44,7 @@ export class CatalogController {
   }
 
   @Post('metals')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateMetal)
   createMetal(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateMetal)) body: CreateMetal) {
     return this.tenancy.client(user.tenantId).metal.create({
@@ -54,7 +54,7 @@ export class CatalogController {
 
   /** Add a purity (22K/916, 18K/750 …) to a metal. */
   @Post('purities')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreatePurity)
   createPurity(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreatePurity)) body: CreatePurity) {
     return this.tenancy.client(user.tenantId).purity.create({
@@ -77,7 +77,7 @@ export class CatalogController {
   }
 
   @Post('stone-types')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateStoneType)
   createStoneType(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateStoneType)) body: CreateStoneType) {
     return this.tenancy.client(user.tenantId).stoneType.create({
@@ -93,7 +93,7 @@ export class CatalogController {
   }
 
   @Post('hsn-codes')
-  @Roles(Role.MANAGER, Role.ACCOUNTANT)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateHsnCode)
   createHsnCode(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateHsnCode)) body: CreateHsnCode) {
     return this.tenancy.client(user.tenantId).hsnCode.create({

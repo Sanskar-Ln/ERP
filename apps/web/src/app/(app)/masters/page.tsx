@@ -43,10 +43,6 @@ export default function MastersPage() {
   const [cPhone, setCPhone] = useState('');
   const [cState, setCState] = useState('27');
 
-  // rate-fix form
-  const [ratePurityId, setRatePurityId] = useState('');
-  const [rateRupees, setRateRupees] = useState('');
-
   const load = () => {
     void api<Metal[]>('GET', '/metals').then(setMetals);
     void api<TaxRule[]>('GET', '/tax-rules').then(setRules);
@@ -67,28 +63,9 @@ export default function MastersPage() {
     }
   }
 
-  async function fixRate(e: React.FormEvent) {
-    e.preventDefault();
-    const metal = metals.find((m) => m.purities.some((p) => p.id === ratePurityId));
-    if (!metal) return;
-    try {
-      await api('POST', '/metal-rates', {
-        metalId: metal.id,
-        purityId: ratePurityId,
-        ratePaisePer10g: Math.round(Number(rateRupees) * 100),
-        source: 'MANUAL_FIX',
-        effectiveAt: new Date().toISOString(),
-      });
-      setMsg('rate fixed');
-      setRateRupees('');
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'failed');
-    }
-  }
-
   return (
     <div className="space-y-6">
-      <PageHeader title="Master data" description="Metals & purities, board-rate fixing, customers and the GST rule matrix" />
+      <PageHeader title="Master data" description="Metals & purities, customers and the GST rule matrix (admin setup)" />
       {msg && <p className="text-sm text-amber-700">{msg}</p>}
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -103,19 +80,7 @@ export default function MastersPage() {
             </div>
           ))}
 
-          <h3 className="mt-4 mb-2 text-sm font-medium">Manual rate fix (₹ per 10 g)</h3>
-          <form onSubmit={fixRate} className="flex gap-2">
-            <select className="input w-44" value={ratePurityId} onChange={(e) => setRatePurityId(e.target.value)}>
-              <option value="">purity…</option>
-              {metals.flatMap((m) => m.purities.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {m.name} {p.label}
-                </option>
-              )))}
-            </select>
-            <input className="input w-32" placeholder="e.g. 92000" value={rateRupees} onChange={(e) => setRateRupees(e.target.value)} />
-            <button className="btn" disabled={!ratePurityId || !rateRupees}>Fix</button>
-          </form>
+          <p className="hint mt-3">Daily board-rate fixing lives on the Dashboard (both roles).</p>
         </section>
 
         <section className="card">

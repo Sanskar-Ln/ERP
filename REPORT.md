@@ -18,8 +18,8 @@ monorepo with four packages:
 ### Backend scope (apps/api)
 
 - **Platform**: multi-tenancy (tenant-scoped Prisma client — every query
-  rewritten centrally, unit-tested), JWT auth, RBAC (owner / manager /
-  salesperson / accountant; owner passes all checks), append-only audit
+  rewritten centrally, unit-tested), JWT auth, two-role RBAC (ADMIN /
+  OPS; ADMIN passes all checks), append-only audit
   log written inside mutation transactions, zod validation with
   zod→OpenAPI Swagger docs at `/api/docs`.
 - **Master data**: metals & purities (karat + fineness ppt), stone types
@@ -87,7 +87,7 @@ pnpm dev
 
 # 2) web admin (port 3000)
 pnpm --filter @erp/web dev
-#    login: owner@demo.in / demo1234  (manager@ / sales@ / accounts@ too)
+#    login: admin@demo.in / demo1234  (ops@demo.in for the OPS role)
 
 # 3) mobile (bare RN CLI — needs Android Studio / Xcode; set API URL in src/lib/config.ts)
 pnpm --filter @erp/mobile android   # or: ios / start

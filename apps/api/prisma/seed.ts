@@ -5,8 +5,8 @@
  * Idempotent-ish: skips if the demo tenant already exists.
  * Run: pnpm --filter @erp/api seed
  *
- * Demo logins (password for all: demo1234):
- *   owner@demo.in / manager@demo.in / sales@demo.in / accounts@demo.in
+ * Demo logins (password for both: demo1234):
+ *   admin@demo.in (ADMIN — full access) / ops@demo.in (OPS — day-to-day)
  */
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
@@ -41,10 +41,8 @@ async function main(): Promise<void> {
   const hash = await bcrypt.hash('demo1234', 10);
   await prisma.user.createMany({
     data: [
-      { id: newId(), tenantId, email: 'owner@demo.in', name: 'Demo Owner', passwordHash: hash, role: 'OWNER', branchId: hqId },
-      { id: newId(), tenantId, email: 'manager@demo.in', name: 'Demo Manager', passwordHash: hash, role: 'MANAGER', branchId: hqId },
-      { id: newId(), tenantId, email: 'sales@demo.in', name: 'Demo Sales', passwordHash: hash, role: 'SALESPERSON', branchId: hqId },
-      { id: newId(), tenantId, email: 'accounts@demo.in', name: 'Demo Accountant', passwordHash: hash, role: 'ACCOUNTANT', branchId: hqId },
+      { id: newId(), tenantId, email: 'admin@demo.in', name: 'Demo Admin', passwordHash: hash, role: 'ADMIN', branchId: hqId },
+      { id: newId(), tenantId, email: 'ops@demo.in', name: 'Demo Ops', passwordHash: hash, role: 'OPS', branchId: hqId },
     ],
   });
 

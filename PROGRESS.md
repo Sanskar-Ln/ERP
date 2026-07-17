@@ -142,6 +142,21 @@ the full milestone list and ARCHITECTURE.md for the system map.
   Android SDK/Xcode) — that's on-machine. Same premium UI/design as
   before, unchanged screens.
 
+- **Post-MVP: two-role model (ADMIN + OPS), Phase 1** — collapsed the
+  four RBAC roles. Shared enum + Prisma migration (PG enum dance with a
+  USING remap: OWNER|MANAGER→ADMIN, SALESPERSON|ACCOUNTANT→OPS; old JWTs
+  fail claim validation → re-login). Full @Roles remap: ADMIN-only =
+  masters, staff, tagging, reports, transfers, item/lot create, doc
+  cancel, movement reverse; OPS = rates fix, customers, suppliers/
+  karigars, adjustments (+ everything unannotated). ADMIN bypasses all
+  checks. Seed → admin@demo.in / ops@demo.in. Web: role-based nav +
+  /masters,/tagging redirect for OPS, rate-fix moved Masters→Dashboard
+  (both roles), item-create/reports/cancel gated. Mobile: role type +
+  isAdmin() compile-fixes only (Phase 2 does the OPS web/counter
+  features). Verified: 17-check API permission-matrix smoke ALL PASS,
+  Chromium shells for both roles (zero errors), 86 tests, 4 typechecks,
+  mobile production bundle.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

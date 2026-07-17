@@ -14,7 +14,7 @@ export interface SessionUser {
   id: string;
   email: string;
   name: string;
-  role: 'OWNER' | 'MANAGER' | 'SALESPERSON' | 'ACCOUNTANT';
+  role: 'ADMIN' | 'OPS';
   tenantId: string;
   branchId: string | null;
 }
@@ -33,8 +33,8 @@ export const session = {
   },
   user: (): SessionUser | null => user,
   authed: (): boolean => token !== null,
-  /** Managers and owners get the admin view; everyone else the counter view. */
-  isManager: (): boolean => user?.role === 'OWNER' || user?.role === 'MANAGER',
+  /** ADMIN gets the admin view; OPS gets the counter view. */
+  isAdmin: (): boolean => user?.role === 'ADMIN',
 };
 
 /** JSON request against the ERP API; throws Error with server message. */

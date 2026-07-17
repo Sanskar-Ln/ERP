@@ -104,7 +104,7 @@ export class TagsController {
   }
 
   @Post()
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateTags)
   create(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateTags)) body: CreateTags) {
     return this.tags.createTags(user, body);

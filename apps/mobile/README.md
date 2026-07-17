@@ -7,11 +7,11 @@ online-only. Converted off Expo to the community CLI so the native
 Two role-based views (chosen by the login role; the API enforces the same
 RBAC server-side, so the split is UX, not security):
 
-- **Manager view** (OWNER/MANAGER) — Dashboard, Stock (create item,
-  adjustment, receive transfers), Billing (invoice/estimate/challan,
-  customer history, convert, cancel), Rates.
-- **Sales counter view** (SALESPERSON/ACCOUNTANT) — Rates, scan-to-price
-  stock Lookup, Estimate creation.
+- **Admin view** (ADMIN) — Dashboard, Stock (create item, adjustment,
+  receive transfers), Billing (invoice/estimate/challan, customer
+  history, convert, cancel), Rates.
+- **Counter view** (OPS) — Rates, scan-to-price stock Lookup, Estimate
+  creation.
 
 ## Expo → bare RN: what changed
 

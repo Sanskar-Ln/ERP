@@ -61,7 +61,7 @@ export class AuthService {
   }
 
   /**
-   * Provision a new tenant: Tenant + default Branch + OWNER user, atomically.
+   * Provision a new tenant: Tenant + default Branch + ADMIN user, atomically.
    * This is the SaaS signup path (public endpoint).
    */
   async registerTenant(input: RegisterTenantInput) {
@@ -94,7 +94,7 @@ export class AuthService {
           email: input.owner.email,
           name: input.owner.name,
           passwordHash,
-          role: Role.OWNER,
+          role: Role.ADMIN,
           branchId,
         },
       }),
@@ -111,7 +111,7 @@ export class AuthService {
     return { tenantId, branchId, ownerUserId: userId };
   }
 
-  /** Create a staff user inside the caller's tenant (OWNER/MANAGER only). */
+  /** Create a staff user inside the caller's tenant (ADMIN only). */
   async createUser(tenantId: string, actorUserId: string, input: CreateUser) {
     const db = this.tenancy.client(tenantId);
     const passwordHash = await bcrypt.hash(input.password, BCRYPT_ROUNDS);

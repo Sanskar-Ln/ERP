@@ -7,9 +7,8 @@
  * - POST /documents/:id/convert   Estimate → Tax Invoice (linkage + audit)
  * - POST /documents/:id/cancel    cancel with stock reversal (audited)
  *
- * RBAC: salespersons issue estimates and invoices (the counter flow);
- * conversion and cancellation additionally allowed to managers/accountants;
- * cancellation is manager-level only.
+ * RBAC: any authenticated user (OPS) issues and converts documents — the
+ * counter flow; cancellation is a correction and therefore ADMIN-only.
  */
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -72,7 +71,7 @@ export class BillingController {
   }
 
   @Post(':id/cancel')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCancelDocument.pick({ reason: true }))
   cancel(
     @CurrentUser() user: JwtClaims,

@@ -146,7 +146,7 @@ export default function BillingScreen(): React.JSX.Element {
   }
 
   const canConvert = detail?.docType === 'ESTIMATE' && detail.status === 'ISSUED';
-  const canCancel = detail?.status === 'ISSUED' && session.isManager();
+  const canCancel = detail?.status === 'ISSUED' && session.isAdmin();
 
   return (
     <ScrollView

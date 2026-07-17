@@ -9,6 +9,52 @@ import { useEffect, useState } from 'react';
 import { api, inr } from '@/lib/api';
 import { Badge, PageHeader, StatTile } from '@/components/ui';
 
+/**
+ * Daily board-rate fix — the shop's morning ritual, so it lives on the
+ * dashboard where BOTH roles land (the API allows OPS rate writes; the
+ * MANUAL_FIX is audited server-side). Moved here from the Masters page,
+ * which is now ADMIN-only.
+ */
+function RateFix({ metals, onFixed }: { metals: Metal[]; onFixed: () => void }) {
+  const [purityId, setPurityId] = useState('');
+  const [rupees, setRupees] = useState('');
+  const [msg, setMsg] = useState('');
+
+  async function fix(e: React.FormEvent) {
+    e.preventDefault();
+    const metal = metals.find((m) => m.purities.some((p) => p.id === purityId));
+    if (!metal) return;
+    try {
+      await api('POST', '/metal-rates', {
+        metalId: metal.id,
+        purityId,
+        ratePaisePer10g: Math.round(Number(rupees) * 100),
+        source: 'MANUAL_FIX',
+        effectiveAt: new Date().toISOString(),
+      });
+      setMsg('rate fixed');
+      setRupees('');
+      onFixed();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'failed');
+    }
+  }
+
+  return (
+    <form onSubmit={fix} className="flex flex-wrap items-center gap-2">
+      <select className="input w-44" value={purityId} onChange={(e) => setPurityId(e.target.value)}>
+        <option value="">purity…</option>
+        {metals.flatMap((m) => m.purities.map((p) => (
+          <option key={p.id} value={p.id}>{m.name} {p.label}</option>
+        )))}
+      </select>
+      <input className="input w-32" placeholder="₹ per 10 g" value={rupees} onChange={(e) => setRupees(e.target.value)} />
+      <button className="btn" disabled={!purityId || !rupees}>Fix rate</button>
+      {msg && <span className="text-sm text-amber-700">{msg}</span>}
+    </form>
+  );
+}
+
 interface Metal {
   id: string;
   code: string;
@@ -51,7 +97,10 @@ export default function DashboardPage() {
       <PageHeader title="Dashboard" description="Today’s board rates and the live stock position" />
 
       <section className="mb-6">
-        <h2 className="section-title mb-3">Board rates (per 10 g)</h2>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="section-title">Board rates (per 10 g)</h2>
+          <RateFix metals={metals} onFixed={() => void api<RateRow[]>('GET', '/metal-rates').then(setRates)} />
+        </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {metals.flatMap((m) =>
             m.purities.map((p) => {

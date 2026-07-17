@@ -84,7 +84,7 @@ export class PartiesController {
   }
 
   @Post('suppliers')
-  @Roles(Role.MANAGER, Role.ACCOUNTANT)
+  @Roles(Role.OPS)
   @ApiZodBody(zCreateSupplier)
   createSupplier(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateSupplier)) body: CreateSupplier) {
     return this.tenancy.client(user.tenantId).supplier.create({
@@ -108,7 +108,7 @@ export class PartiesController {
   }
 
   @Post('karigars')
-  @Roles(Role.MANAGER)
+  @Roles(Role.OPS)
   @ApiZodBody(zCreateKarigar)
   createKarigar(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateKarigar)) body: CreateKarigar) {
     return this.tenancy.client(user.tenantId).karigar.create({

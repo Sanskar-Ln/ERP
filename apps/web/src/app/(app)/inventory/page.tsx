@@ -6,7 +6,7 @@
  * movement ledger of a selected item.
  */
 import { useEffect, useState } from 'react';
-import { api, inr } from '@/lib/api';
+import { api, inr, isAdmin } from '@/lib/api';
 import { Badge, PageHeader } from '@/components/ui';
 
 interface Metal {
@@ -86,6 +86,7 @@ export default function InventoryPage() {
       <PageHeader title="Inventory" description="Composite items, dual-unit stock and the append-only movement ledger" />
       {msg && <p className="text-sm text-amber-700">{msg}</p>}
 
+      {isAdmin() && (
       <section className="card">
         <h2 className="section-title mb-3">New item (single metal component)</h2>
         <form onSubmit={createItem} className="grid grid-cols-2 gap-2 md:grid-cols-4">
@@ -114,6 +115,7 @@ export default function InventoryPage() {
           <button className="btn col-span-2 md:col-span-1">Create item</button>
         </form>
       </section>
+      )}
 
       <section className="card">
         <h2 className="section-title mb-3">Items</h2>

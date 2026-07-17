@@ -1,9 +1,9 @@
 /**
  * RolesGuard — RBAC enforcement.
  *
- * Routes declare required roles with @Roles(Role.OWNER, Role.MANAGER, …).
- * A route without @Roles only requires authentication. OWNER passes every
- * role check (the owner can do anything their staff can).
+ * Routes declare required roles with @Roles(Role.ADMIN) / @Roles(Role.OPS).
+ * A route without @Roles only requires authentication. ADMIN passes every
+ * role check (full access); OPS passes only checks that name it.
  */
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -26,7 +26,7 @@ export class RolesGuard implements CanActivate {
 
     const user = ctx.switchToHttp().getRequest().user as JwtClaims | undefined;
     if (!user) throw new ForbiddenException('no user on request');
-    if (user.role === Role.OWNER || required.includes(user.role)) return true;
+    if (user.role === Role.ADMIN || required.includes(user.role)) return true;
     throw new ForbiddenException(`requires role: ${required.join(' | ')}`);
   }
 }

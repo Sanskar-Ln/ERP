@@ -147,7 +147,7 @@ export class LabelsController {
   }
 
   @Post('label-templates')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateLabelTemplate)
   createTemplate(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateLabelTemplate)) body: CreateLabelTemplate) {
     return this.tenancy.client(user.tenantId).labelTemplate.create({
@@ -165,7 +165,7 @@ export class LabelsController {
   }
 
   @Post('label-batches')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateLabelBatch)
   createBatch(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateLabelBatch)) body: CreateLabelBatch) {
     return this.labels.createBatch(user, body);

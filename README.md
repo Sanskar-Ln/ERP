@@ -74,8 +74,8 @@ in-browser viewing. A **read (OCR)** button reads an uploaded bill photo
 server-side and shows the recognized fields (bill no, date, total,
 weights, rate, phone) as a draft to copy into a new online bill.
 
-The **Billing** page has **CSV report downloads** for managers/
-accountants: the bills register (one row per document, taxes split
+The **Billing** page has **CSV report downloads** (ADMIN only): the
+bills register (one row per document, taxes split
 CGST/SGST/IGST) and the GST summary (totals per rate bucket) for any
 date range.
 
@@ -101,25 +101,27 @@ machine's LAN address (a device can't reach your `localhost`). See
 
 The app picks its view from the login role:
 
-- **Manager view** (`manager@demo.in` / `owner@demo.in`) — Dashboard,
-  Stock (create items, adjustments, receive transfers), full Billing
-  (invoice/estimate/challan, customer bill history, convert, cancel),
-  Rates.
-- **Sales counter view** (`sales@demo.in`) — Rates, scan-to-price stock
-  lookup, Estimate creation.
+- **Admin view** (`admin@demo.in`) — Dashboard, Stock (create items,
+  adjustments, receive transfers), full Billing (invoice/estimate/
+  challan, customer bill history, convert, cancel), Rates.
+- **Counter view** (`ops@demo.in`) — Rates, scan-to-price stock lookup,
+  Estimate creation.
 
 Both views have a **camera barcode scanner** (Scan button next to every
 item-code field; Code128 + DataMatrix). A USB/Bluetooth scanner in
 keyboard mode also works — it just types into the same fields.
 
-### 6. Demo logins (after seeding — password `demo1234` for all)
+### 6. Demo logins (after seeding — password `demo1234` for both)
+
+Two roles only. **ADMIN** has full access; **OPS** covers the day-to-day:
+billing (issue/convert), stock adjustments, customers, suppliers/karigars,
+and the daily board-rate fix. OPS cannot touch masters, staff, tagging,
+transfers, reports, or corrections (cancel / movement reverse).
 
 | Email | Role | Sees |
 |-------|------|------|
-| owner@demo.in | OWNER | everything (web + mobile manager view) |
-| manager@demo.in | MANAGER | mobile manager view / web admin |
-| sales@demo.in | SALESPERSON | mobile counter view; estimates & invoices |
-| accounts@demo.in | ACCOUNTANT | rates, tax rules, HSN; counter view on mobile |
+| admin@demo.in | ADMIN | everything (full web nav + mobile admin view) |
+| ops@demo.in | OPS | web: Dashboard / Customers / Inventory / Billing; mobile counter view |
 
 ### 7. Tests & checks
 

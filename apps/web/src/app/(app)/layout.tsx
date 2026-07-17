@@ -21,7 +21,12 @@ import {
 } from 'lucide-react';
 import { session, type SessionUser } from '@/lib/api';
 
-const NAV: [href: string, label: string, icon: LucideIcon][] = [
+/**
+ * Navigation by role: ADMIN sees everything; OPS sees the day-to-day
+ * pages only (no Masters / Tags — those are setup work). The API enforces
+ * the same split server-side; this is presentation.
+ */
+const ADMIN_NAV: [href: string, label: string, icon: LucideIcon][] = [
   ['/dashboard', 'Dashboard', LayoutDashboard],
   ['/masters', 'Master data', Database],
   ['/customers', 'Customers', Users],
@@ -29,6 +34,14 @@ const NAV: [href: string, label: string, icon: LucideIcon][] = [
   ['/tagging', 'Tags & labels', Tags],
   ['/billing', 'Billing', ReceiptText],
 ];
+const OPS_NAV: [href: string, label: string, icon: LucideIcon][] = [
+  ['/dashboard', 'Dashboard', LayoutDashboard],
+  ['/customers', 'Customers', Users],
+  ['/inventory', 'Inventory', Package],
+  ['/billing', 'Billing', ReceiptText],
+];
+/** Pages an OPS user must not land on (deep links redirect to dashboard). */
+const ADMIN_ONLY_PATHS = ['/masters', '/tagging'];
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -41,10 +54,17 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       router.replace('/login');
       return;
     }
+    // OPS deep-linking into an admin-only page bounces to the dashboard.
+    if (u.role !== 'ADMIN' && ADMIN_ONLY_PATHS.some((p) => pathname.startsWith(p))) {
+      router.replace('/dashboard');
+      return;
+    }
     setUser(u);
-  }, [router]);
+  }, [router, pathname]);
 
   if (!user) return null;
+
+  const nav = user.role === 'ADMIN' ? ADMIN_NAV : OPS_NAV;
 
   const initials = user.name
     .split(/\s+/)
@@ -69,7 +89,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
         {/* nav */}
         <nav className="flex-1 space-y-0.5 px-3">
-          {NAV.map(([href, label, Icon]) => {
+          {nav.map(([href, label, Icon]) => {
             const active = pathname.startsWith(href);
             return (
               <Link

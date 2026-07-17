@@ -177,14 +177,14 @@ export class TransfersController {
   }
 
   @Post()
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateBranchTransfer)
   create(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateBranchTransfer)) body: CreateBranchTransfer) {
     return this.transfers.create(user, body);
   }
 
   @Post(':id/receive')
-  @Roles(Role.MANAGER)
+  @Roles(Role.ADMIN)
   receive(@CurrentUser() user: JwtClaims, @Param('id', new ZodPipe(zId)) id: string) {
     return this.transfers.receive(user, id);
   }

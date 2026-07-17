@@ -1,7 +1,7 @@
 /**
  * Auth decorators:
  * - @Public()      — route skips JWT verification (login, health)
- * - @Roles(...)    — route requires one of the given RBAC roles
+ * - @Roles(...)    — route requires one of the given roles (ADMIN bypasses)
  * - @CurrentUser() — injects the verified JWT claims into a handler param
  */
 import { createParamDecorator, ExecutionContext, SetMetadata } from '@nestjs/common';

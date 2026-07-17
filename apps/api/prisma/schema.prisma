@@ -24,10 +24,8 @@ datasource db {
 // ------------------------------------------------------------- enums
 
 enum Role {
-  OWNER
-  MANAGER
-  SALESPERSON
-  ACCOUNTANT
+  ADMIN
+  OPS
 }
 
 enum ComponentType {

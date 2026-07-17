@@ -13,7 +13,7 @@ import { color, font, radius, shadow } from '../../lib/theme';
 import { Btn, Field, Hint, Notice } from '../../components/kit';
 
 export default function LoginScreen({ onLogin }: { onLogin: () => void }): React.JSX.Element {
-  const [email, setEmail] = useState('manager@demo.in');
+  const [email, setEmail] = useState('admin@demo.in');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -49,7 +49,7 @@ export default function LoginScreen({ onLogin }: { onLogin: () => void }): React
           {error ? <Notice kind="error">{error}</Notice> : null}
           <Btn title={busy ? 'Signing in…' : 'Sign in'} onPress={() => void submit()} busy={busy} />
           <View style={styles.hints}>
-            <Hint>manager view: manager@demo.in · counter view: sales@demo.in</Hint>
+            <Hint>admin view: admin@demo.in · counter view: ops@demo.in</Hint>
             <Hint>password demo1234</Hint>
           </View>
         </View>

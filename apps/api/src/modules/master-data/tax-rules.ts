@@ -5,7 +5,7 @@
  * Tax rules are effective-dated and append-only in spirit: a rate change is
  * a NEW row (optionally closing the old row's window), so past invoices
  * remain explainable. Rule changes affect every future invoice, hence the
- * audit trail and ACCOUNTANT/MANAGER write access.
+ * audit trail and ADMIN-only write access.
  */
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
@@ -55,7 +55,7 @@ export class TaxRulesController {
   }
 
   @Post()
-  @Roles(Role.MANAGER, Role.ACCOUNTANT)
+  @Roles(Role.ADMIN)
   @ApiZodBody(zCreateTaxRule)
   async create(@CurrentUser() user: JwtClaims, @Body(new ZodPipe(zCreateTaxRule)) body: CreateTaxRule) {
     const db = this.tenancy.client(user.tenantId);

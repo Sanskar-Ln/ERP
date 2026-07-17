@@ -6,12 +6,16 @@
  * stay tree-shakeable in the web/mobile bundles.
  */
 
-/** RBAC roles. Order is informal seniority; permissions are mapped per route in the API. */
+/**
+ * RBAC roles — deliberately just two:
+ * - ADMIN: full access; bypasses every @Roles check in the API.
+ * - OPS:   day-to-day operations (billing, stock adjustments, customers,
+ *          board-rate fixing) — no masters, staff, tagging, reports,
+ *          transfers or corrections (cancel/reverse).
+ */
 export const Role = {
-  OWNER: 'OWNER',
-  MANAGER: 'MANAGER',
-  SALESPERSON: 'SALESPERSON',
-  ACCOUNTANT: 'ACCOUNTANT',
+  ADMIN: 'ADMIN',
+  OPS: 'OPS',
 } as const;
 export type Role = (typeof Role)[keyof typeof Role];
 
