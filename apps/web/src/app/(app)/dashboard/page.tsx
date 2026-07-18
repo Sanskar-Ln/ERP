@@ -76,7 +76,8 @@ interface Summary {
 }
 
 export default function DashboardPage() {
-  const [metals, setMetals] = useState<Metal[]>([]);
+  // null = still loading (skeleton tiles shown), [] = loaded and empty
+  const [metals, setMetals] = useState<Metal[] | null>(null);
   const [rates, setRates] = useState<RateRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
 
@@ -99,22 +100,24 @@ export default function DashboardPage() {
       <section className="mb-6">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
           <h2 className="section-title">Board rates (per 10 g)</h2>
-          <RateFix metals={metals} onFixed={() => void api<RateRow[]>('GET', '/metal-rates').then(setRates)} />
+          <RateFix metals={metals ?? []} onFixed={() => void api<RateRow[]>('GET', '/metal-rates').then(setRates)} />
         </div>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {metals.flatMap((m) =>
-            m.purities.map((p) => {
-              const r = latest.get(`${m.id}:${p.id}`);
-              return (
-                <StatTile
-                  key={p.id}
-                  label={`${m.name} ${p.label}`}
-                  value={r ? inr(r.ratePaisePer10g) : '—'}
-                  foot={r ? <Badge status={r.source} /> : 'no rate fixed'}
-                />
-              );
-            }),
-          )}
+          {metals === null
+            ? Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton h-[104px] rounded-2xl" />)
+            : metals.flatMap((m) =>
+                m.purities.map((p) => {
+                  const r = latest.get(`${m.id}:${p.id}`);
+                  return (
+                    <StatTile
+                      key={p.id}
+                      label={`${m.name} ${p.label}`}
+                      value={r ? inr(r.ratePaisePer10g) : '—'}
+                      foot={r ? <Badge status={r.source} /> : 'no rate fixed'}
+                    />
+                  );
+                }),
+              )}
         </div>
       </section>
 

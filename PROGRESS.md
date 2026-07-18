@@ -169,6 +169,26 @@ the full milestone list and ARCHITECTURE.md for the system map.
   paper bills, ledger, OCR field mapping, OPS 4-tab bar — plus a 6-page
   zero-overflow pass. All green.
 
+- **Post-MVP: premium pass — Playfair Display + Plus Jakarta Sans,
+  deeper polish, phone card-lists** — typography swapped to the classic
+  fine-jewellery pairing (Playfair Display for brand/display headings,
+  Plus Jakarta Sans for all UI and figures; npm-bundled, no CDN) on BOTH
+  web and mobile (ttf assets relinked via react-native-asset, filenames =
+  PostScript names so iOS/Android agree). Web polish: warm gold-tinted
+  background wash, cards with layered shadow + hairline ring, gold
+  buttons with inner top highlight and ≥44px touch height on phones,
+  bigger stat-tile values, a `.skeleton` shimmer while dashboard tiles
+  and billing/customers/inventory lists load, EmptyState with icon.
+  Phone lists are now native-app style tappable cards (MobileListCard
+  primitive; billing documents open the detail on tap, inventory cards
+  carry the ledger action, customer paper-bill cards carry view/OCR/
+  fields) while sm+ keeps the dense tables. Fixed the mobile twin of the
+  dual-@types/react skew (tsconfig paths pin to the app's own 18.x copy,
+  ts5.0 variant for TS 5.0). Verified: 40-check Playwright sweep at
+  390px+1440px for both roles (computed font-families, zero overflow on
+  all 6 pages, card↔table swap, tap-through, skeleton appear/resolve),
+  web build, 86 tests, 4 typechecks, mobile production Metro bundle.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { api, inr, isAdmin } from '@/lib/api';
-import { Badge, PageHeader } from '@/components/ui';
+import { Badge, EmptyState, MobileListCard, PageHeader, SkeletonRows } from '@/components/ui';
 
 interface Metal {
   id: string;
@@ -39,7 +39,8 @@ interface Movement {
 }
 
 export default function InventoryPage() {
-  const [items, setItems] = useState<Item[]>([]);
+  // null = still loading (skeleton shown), [] = loaded and empty
+  const [items, setItems] = useState<Item[] | null>(null);
   const [metals, setMetals] = useState<Metal[]>([]);
   const [hsns, setHsns] = useState<Hsn[]>([]);
   const [moves, setMoves] = useState<Movement[] | null>(null);
@@ -119,31 +120,64 @@ export default function InventoryPage() {
 
       <section className="card">
         <h2 className="section-title mb-3">Items</h2>
-        <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
-          <thead>
-            <tr>
-              <th className="th">Code</th><th className="th">Name</th><th className="th">Status</th>
-              <th className="th">Pieces</th><th className="th">Gross g</th><th className="th">Stones</th><th className="th"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it) => (
-              <tr key={it.id}>
-                <td className="td font-mono text-xs">{it.itemCode}</td>
-                <td className="td">{it.name}</td>
-                <td className="td"><Badge status={it.status} /></td>
-                <td className="td">{it.pieces}</td>
-                <td className="td">{it.metalComponents.reduce((s, c) => s + Number(c.grossWeightG), 0).toFixed(3)}</td>
-                <td className="td">{it.stoneComponents.length ? `${it.stoneComponents.length} (${inr(it.stoneComponents.reduce((s, c) => s + c.valuePaise, 0))})` : '—'}</td>
-                <td className="td">
-                  <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
-                    ledger
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table></div>
+        {items === null ? (
+          <SkeletonRows rows={5} />
+        ) : items.length === 0 ? (
+          <EmptyState>No items yet{isAdmin() ? ' — create the first one above.' : '.'}</EmptyState>
+        ) : (
+          <>
+            {/* phone: cards with the ledger action */}
+            <div className="space-y-2.5 sm:hidden">
+              {items.map((it) => (
+                <MobileListCard
+                  key={it.id}
+                  title={it.name}
+                  badges={<><span className="font-mono text-[11px] text-stone-500">{it.itemCode}</span><Badge status={it.status} /></>}
+                  right={`${it.metalComponents.reduce((s, c) => s + Number(c.grossWeightG), 0).toFixed(3)} g`}
+                  meta={
+                    <>
+                      {it.pieces} pc
+                      {it.stoneComponents.length
+                        ? ` · ${it.stoneComponents.length} stones (${inr(it.stoneComponents.reduce((s, c) => s + c.valuePaise, 0))})`
+                        : ''}
+                    </>
+                  }
+                  actions={
+                    <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
+                      ledger
+                    </button>
+                  }
+                />
+              ))}
+            </div>
+            {/* desktop: dense table */}
+            <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px]">
+              <thead>
+                <tr>
+                  <th className="th">Code</th><th className="th">Name</th><th className="th">Status</th>
+                  <th className="th">Pieces</th><th className="th">Gross g</th><th className="th">Stones</th><th className="th"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it) => (
+                  <tr key={it.id}>
+                    <td className="td font-mono text-xs">{it.itemCode}</td>
+                    <td className="td">{it.name}</td>
+                    <td className="td"><Badge status={it.status} /></td>
+                    <td className="td">{it.pieces}</td>
+                    <td className="td">{it.metalComponents.reduce((s, c) => s + Number(c.grossWeightG), 0).toFixed(3)}</td>
+                    <td className="td">{it.stoneComponents.length ? `${it.stoneComponents.length} (${inr(it.stoneComponents.reduce((s, c) => s + c.valuePaise, 0))})` : '—'}</td>
+                    <td className="td">
+                      <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
+                        ledger
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table></div>
+          </>
+        )}
       </section>
 
       {moves && (

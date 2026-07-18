@@ -7,7 +7,7 @@
  */
 import { useEffect, useState } from 'react';
 import { api, apiBlob, inr, isAdmin } from '@/lib/api';
-import { Badge, PageHeader } from '@/components/ui';
+import { Badge, EmptyState, MobileListCard, PageHeader, SkeletonRows } from '@/components/ui';
 
 interface Customer {
   id: string;
@@ -96,7 +96,8 @@ export default function BillingPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [items, setItems] = useState<Item[]>([]);
   const [metals, setMetals] = useState<Metal[]>([]);
-  const [docs, setDocs] = useState<Doc[]>([]);
+  // null = still loading (skeleton shown), [] = loaded and empty
+  const [docs, setDocs] = useState<Doc[] | null>(null);
   const [detail, setDetail] = useState<DocDetail | null>(null);
   const [msg, setMsg] = useState('');
 
@@ -287,21 +288,42 @@ export default function BillingPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="card">
           <h2 className="section-title mb-3">Documents</h2>
-          <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
-            <thead>
-              <tr><th className="th">Number</th><th className="th">Type</th><th className="th">Status</th><th className="th">Total</th></tr>
-            </thead>
-            <tbody>
-              {docs.map((d) => (
-                <tr key={d.id} className="cursor-pointer hover:bg-neutral-50" onClick={() => void open(d.id)}>
-                  <td className="td font-mono text-xs">{d.docNumber}</td>
-                  <td className="td"><Badge status={d.docType} /></td>
-                  <td className="td"><Badge status={d.status} /></td>
-                  <td className="td num font-medium">{inr(d.grandTotalPaise)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table></div>
+          {docs === null ? (
+            <SkeletonRows rows={5} />
+          ) : docs.length === 0 ? (
+            <EmptyState>No documents yet — issue the first one above.</EmptyState>
+          ) : (
+            <>
+              {/* phone: tappable cards */}
+              <div className="space-y-2.5 sm:hidden">
+                {docs.map((d) => (
+                  <MobileListCard
+                    key={d.id}
+                    title={<span className="font-mono text-xs">{d.docNumber}</span>}
+                    badges={<><Badge status={d.docType} /><Badge status={d.status} /></>}
+                    right={inr(d.grandTotalPaise)}
+                    onClick={() => void open(d.id)}
+                  />
+                ))}
+              </div>
+              {/* desktop: dense table */}
+              <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px]">
+                <thead>
+                  <tr><th className="th">Number</th><th className="th">Type</th><th className="th">Status</th><th className="th">Total</th></tr>
+                </thead>
+                <tbody>
+                  {docs.map((d) => (
+                    <tr key={d.id} className="cursor-pointer hover:bg-neutral-50" onClick={() => void open(d.id)}>
+                      <td className="td font-mono text-xs">{d.docNumber}</td>
+                      <td className="td"><Badge status={d.docType} /></td>
+                      <td className="td"><Badge status={d.status} /></td>
+                      <td className="td num font-medium">{inr(d.grandTotalPaise)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table></div>
+            </>
+          )}
         </section>
 
         {detail && (
@@ -340,7 +362,10 @@ export default function BillingPage() {
               {detail.taxLines.map((t, i) => (
                 <div key={i} className="text-neutral-600">{t.label}: {inr(t.taxPaise)}</div>
               ))}
-              <div className="text-base font-semibold">Grand total: {inr(detail.grandTotalPaise)}</div>
+              <div className="mt-2 flex items-baseline justify-between rounded-xl bg-gold-50/70 px-3 py-2.5 ring-1 ring-gold-200/60">
+                <span className="text-sm font-medium text-gold-800">Grand total</span>
+                <span className="text-2xl font-semibold text-stone-900">{inr(detail.grandTotalPaise)}</span>
+              </div>
             </div>
           </section>
         )}

@@ -3,17 +3,18 @@
 /*
  * Design system — jewellery ERP web admin.
  *
- * Typography: Inter Variable for all UI and numbers (values/figures are
- * NEVER set in the serif — it reads as decoration); Fraunces Variable is
- * reserved for the brand wordmark and page display headings only.
+ * Typography: Plus Jakarta Sans for all UI and numbers (values/figures are
+ * NEVER set in the serif — it reads as decoration); Playfair Display is
+ * reserved for the brand wordmark and page display headings only — the
+ * classic fine-jewellery pairing.
  * Palette: warm stone neutrals + a restrained gold accent (the trade's
  * colour without the kitsch), reserved status colours (always paired
  * with a text label, never colour alone).
  */
 
 @theme {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-display: 'Fraunces Variable', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Playfair Display Variable', Georgia, 'Times New Roman', serif;
 
   /* brand golds */
   --color-gold-50: #fdf9ef;
@@ -36,36 +37,54 @@
 
 body {
   font-family: var(--font-sans);
-  font-feature-settings: 'cv11', 'ss01';
   -webkit-font-smoothing: antialiased;
+  /* warm wash: pages sit on a faint gold-tinted light, not flat grey */
+  background-color: #fafaf9;
+  background-image: radial-gradient(
+    90rem 44rem at 50% -12rem,
+    rgb(249 239 216 / 0.45),
+    transparent 70%
+  );
+  background-repeat: no-repeat;
+}
+
+/* loading shimmer sweep (used by .skeleton) */
+@keyframes skeleton-sweep {
+  100% {
+    transform: translateX(100%);
+  }
 }
 
 @layer components {
   /* ---------------------------------------------------------- buttons */
+  /* min-h keeps every button a comfortable ≥44px touch target on phones;
+     desktop (sm+) reverts to the tighter padding-driven height */
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-b
-      from-gold-500 to-gold-600 px-3.5 py-2 text-sm font-medium text-white shadow-sm
-      transition-all duration-150 hover:from-gold-600 hover:to-gold-700 hover:shadow
+    @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-b
+      from-gold-500 to-gold-600 px-4 py-2 text-sm font-medium text-white
+      shadow-[inset_0_1px_0_rgb(255_255_255/0.22),0_1px_2px_rgb(0_0_0/0.12)]
+      transition-all duration-150 hover:from-gold-600 hover:to-gold-700
+      hover:shadow-[inset_0_1px_0_rgb(255_255_255/0.18),0_2px_6px_-1px_rgb(0_0_0/0.18)]
       focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500
-      active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
+      active:translate-y-px disabled:pointer-events-none disabled:opacity-50 sm:min-h-9;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-stone-300
-      bg-white px-3.5 py-2 text-sm font-medium text-stone-700 shadow-sm transition-all
-      duration-150 hover:border-stone-400 hover:bg-stone-50
+    @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border
+      border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 shadow-sm
+      transition-all duration-150 hover:border-stone-400 hover:bg-stone-50
       focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500
-      active:translate-y-px disabled:pointer-events-none disabled:opacity-50;
+      active:translate-y-px disabled:pointer-events-none disabled:opacity-50 sm:min-h-9;
   }
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-200
-      bg-white px-3.5 py-2 text-sm font-medium text-red-700 shadow-sm transition-all
-      duration-150 hover:border-red-300 hover:bg-red-50
+    @apply inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border
+      border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-700 shadow-sm
+      transition-all duration-150 hover:border-red-300 hover:bg-red-50
       focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500
-      disabled:pointer-events-none disabled:opacity-50;
+      disabled:pointer-events-none disabled:opacity-50 sm:min-h-9;
   }
-  /* compact variant for table rows */
+  /* compact variant for table rows / card actions */
   .btn-xs {
-    @apply px-2.5 py-1 text-xs;
+    @apply min-h-8 rounded-lg px-2.5 py-1 text-xs sm:min-h-0;
   }
 
   /* ---------------------------------------------------------- inputs */
@@ -82,7 +101,26 @@ body {
   .card {
     /* min-w-0 lets a card shrink inside grid/flex parents so wide tables
        scroll within their overflow wrapper instead of overflowing the page */
-    @apply min-w-0 rounded-xl border border-stone-200/80 bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_4px_12px_-4px_rgb(0_0_0/0.06)];
+    @apply min-w-0 rounded-2xl border border-stone-200/70 bg-white p-5 ring-1 ring-stone-900/[0.04]
+      shadow-[0_1px_2px_rgb(0_0_0/0.04),0_6px_16px_-6px_rgb(0_0_0/0.07)];
+  }
+  /* tappable list card (phone lists) — visible press feedback */
+  .card-tap {
+    @apply w-full cursor-pointer rounded-xl border border-stone-200/80 bg-white p-3.5 text-left
+      shadow-[0_1px_2px_rgb(0_0_0/0.04)] ring-1 ring-stone-900/[0.03] transition-all
+      duration-150 hover:border-gold-300 hover:shadow-[0_3px_10px_-3px_rgb(0_0_0/0.12)]
+      focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gold-500
+      active:scale-[0.99] active:bg-stone-50;
+  }
+  /* loading placeholder with a light shimmer sweep */
+  .skeleton {
+    @apply relative overflow-hidden rounded-lg bg-stone-200/60;
+  }
+  .skeleton::after {
+    content: '';
+    @apply absolute inset-0 -translate-x-full;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.65), transparent);
+    animation: skeleton-sweep 1.5s ease-in-out infinite;
   }
 
   /* ---------------------------------------------------------- tables */
@@ -127,7 +165,7 @@ body {
 
   /* ---------------------------------------------------------- misc */
   .page-title {
-    @apply font-display text-2xl font-semibold tracking-tight text-stone-900;
+    @apply font-display text-[26px] font-semibold tracking-tight text-stone-900 sm:text-3xl;
   }
   .section-title {
     @apply text-sm font-semibold text-stone-900;

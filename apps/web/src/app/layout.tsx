@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 // Fonts are bundled from npm (@fontsource) — no external font CDN at
-// runtime. Inter carries all UI text and figures; Fraunces is reserved
-// for the brand wordmark and page display headings.
-import '@fontsource-variable/inter';
-import '@fontsource-variable/fraunces';
+// runtime. Plus Jakarta Sans carries all UI text and figures; Playfair
+// Display is reserved for the brand wordmark and page display headings —
+// the classic fine-jewellery pairing.
+import '@fontsource-variable/plus-jakarta-sans';
+import '@fontsource-variable/playfair-display';
 import './globals.css';
 
 export const metadata: Metadata = {

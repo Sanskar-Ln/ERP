@@ -2,24 +2,24 @@
   "migIndex": 1,
   "data": [
     {
-      "path": "assets/fonts/Fraunces-SemiBold.ttf",
-      "sha1": "9c4d7a6a3b6f3ff14662cf4702ff88b236d58c4c"
+      "path": "assets/fonts/PlayfairDisplay-SemiBold.ttf",
+      "sha1": "7fa24e8796734ec17d72f1e97cfb5d427508e337"
     },
     {
-      "path": "assets/fonts/Inter-Bold.ttf",
-      "sha1": "5a912e0600350ef7bb9c7c2e6c585815bb30ca16"
+      "path": "assets/fonts/PlusJakartaSans-Bold.ttf",
+      "sha1": "606f1b32433c9b6902d97c657f9b3a2f89bab582"
     },
     {
-      "path": "assets/fonts/Inter-Medium.ttf",
-      "sha1": "a961cb10310cf86b23bfbe21a637614d1046d795"
+      "path": "assets/fonts/PlusJakartaSans-Medium.ttf",
+      "sha1": "c328c76cab7078b89d925d73809f03c12a00143a"
     },
     {
-      "path": "assets/fonts/Inter-Regular.ttf",
-      "sha1": "7a3fa76705ad586f6410a1b5b0059dd17db20c26"
+      "path": "assets/fonts/PlusJakartaSans-Regular.ttf",
+      "sha1": "ea07d33f23fb6c4856a642d035c463dc99a7f88a"
     },
     {
-      "path": "assets/fonts/Inter-SemiBold.ttf",
-      "sha1": "863e1483cb0cad642b80fc840072596afd5ff144"
+      "path": "assets/fonts/PlusJakartaSans-SemiBold.ttf",
+      "sha1": "576ccf10be11652fc309f3682a327a98847c596e"
     }
   ]
 }

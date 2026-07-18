@@ -4,7 +4,20 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "types": ["react", "react-native"]
+    "types": ["react", "react-native"],
+    "baseUrl": ".",
+    // The workspace carries two @types/react majors (web=19, this app=18).
+    // pnpm's hidden hoist can hand native-module typings the 19 copy, which
+    // breaks JSX class-component checks — pin every react types entry to
+    // this app's own 18 copy (same fix as apps/web/tsconfig.json).
+    // (ts5.0/ because this app's TS is 5.0.x, where @types/react@18's
+    // typesVersions serves that folder — pointing at the top-level d.ts
+    // would create a second, incompatible module instance)
+    "paths": {
+      "react": ["./node_modules/@types/react/ts5.0/index.d.ts"],
+      "react/jsx-runtime": ["./node_modules/@types/react/ts5.0/jsx-runtime.d.ts"],
+      "react/jsx-dev-runtime": ["./node_modules/@types/react/ts5.0/jsx-dev-runtime.d.ts"]
+    }
   },
   "include": ["index.js", "App.tsx", "src"]
 }

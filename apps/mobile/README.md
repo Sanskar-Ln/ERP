@@ -58,8 +58,9 @@ typechecking work under the normal pnpm layout as-is.)
 folder. `npx react-native-asset` copies them into
 `android/app/src/main/assets/fonts/` and registers them in the iOS
 Info.plist (`UIAppFonts`). Family names in `src/lib/theme.ts` match the
-file names (`Inter-Regular.ttf` → `"Inter-Regular"`). Re-run
-`react-native-asset` after adding fonts.
+file names (`PlusJakartaSans-Regular.ttf` → `"PlusJakartaSans-Regular"`;
+the filenames also equal the fonts' PostScript names, which is what iOS
+resolves). Re-run `react-native-asset` after adding fonts.
 
 ## Camera / barcode (vision-camera)
 

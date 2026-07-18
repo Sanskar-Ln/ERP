@@ -1,8 +1,9 @@
 /**
  * Design tokens — the mobile twin of the web admin's design system.
  *
- * Same brand: Inter for all UI text and figures, Fraunces reserved for
- * the wordmark and screen titles, a restrained gold accent over warm
+ * Same brand: Plus Jakarta Sans for all UI text and figures, Playfair
+ * Display reserved for the wordmark and screen titles, a restrained gold
+ * accent over warm
  * stone neutrals, espresso for dark chrome, and RESERVED status colours
  * that always ship with a text label (never colour alone).
  */
@@ -47,18 +48,20 @@ export const color = {
 
 /**
  * Font families — the names match the bundled .ttf files in assets/fonts
- * (Inter-Regular.ttf → family "Inter-Regular"). In bare RN there is no
+ * (PlusJakartaSans-Regular.ttf → family "PlusJakartaSans-Regular"; the
+ * filenames also equal the fonts' PostScript names so iOS resolves the
+ * same strings). In bare RN there is no
  * runtime font loader: `react-native-asset` links these files into the
  * native projects at build time and they're referenced here by family
  * name. See README "Fonts".
  */
 export const font = {
-  regular: 'Inter-Regular',
-  medium: 'Inter-Medium',
-  semibold: 'Inter-SemiBold',
-  bold: 'Inter-Bold',
+  regular: 'PlusJakartaSans-Regular',
+  medium: 'PlusJakartaSans-Medium',
+  semibold: 'PlusJakartaSans-SemiBold',
+  bold: 'PlusJakartaSans-Bold',
   /** display serif — wordmark and screen titles ONLY, never figures */
-  display: 'Fraunces-SemiBold',
+  display: 'PlayfairDisplay-SemiBold',
 } as const;
 
 export const radius = { sm: 8, md: 12, lg: 16, full: 999 } as const;

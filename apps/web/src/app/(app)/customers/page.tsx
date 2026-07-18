@@ -12,7 +12,7 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { api, apiBlob, API_URL, inr, session } from '@/lib/api';
-import { Badge, EmptyState, PageHeader } from '@/components/ui';
+import { Badge, EmptyState, MobileListCard, PageHeader, SkeletonRows } from '@/components/ui';
 
 interface Customer {
   id: string;
@@ -55,7 +55,8 @@ interface PaperBill {
 }
 
 export default function CustomersPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  // null = still loading (skeleton shown), [] = loaded and empty
+  const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<Customer | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -151,21 +152,27 @@ export default function CustomersPage() {
           <div className="mb-3 flex gap-2">
             <input className="input" placeholder="search name / phone" value={q} onChange={(e) => setQ(e.target.value)} />
           </div>
-          <ul className="max-h-[32rem] space-y-1 overflow-auto">
-            {customers.map((c) => (
-              <li key={c.id}>
-                <button
-                  className={`w-full rounded px-2 py-1.5 text-left text-sm hover:bg-neutral-100 ${
-                    selected?.id === c.id ? 'bg-amber-50 font-medium text-amber-800' : ''
-                  }`}
-                  onClick={() => void select(c)}
-                >
-                  {c.name}
-                  <span className="block text-xs text-neutral-400">{c.phone}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
+          {customers === null ? (
+            <SkeletonRows rows={6} />
+          ) : customers.length === 0 ? (
+            <EmptyState>no customers match</EmptyState>
+          ) : (
+            <ul className="max-h-[32rem] space-y-1 overflow-auto">
+              {customers.map((c) => (
+                <li key={c.id}>
+                  <button
+                    className={`min-h-11 w-full rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-stone-100 sm:min-h-0 ${
+                      selected?.id === c.id ? 'bg-gold-50 font-medium text-gold-800 ring-1 ring-gold-200/70' : ''
+                    }`}
+                    onClick={() => void select(c)}
+                  >
+                    {c.name}
+                    <span className="block text-xs text-neutral-400">{c.phone}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         {selected ? (
@@ -187,7 +194,20 @@ export default function CustomersPage() {
             <section className="card">
               <h3 className="section-title mb-3">Documents issued here ({docs.length})</h3>
               {docs.length === 0 && <EmptyState>no documents issued to this customer yet</EmptyState>}
-              <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
+              {/* phone: cards */}
+              <div className="space-y-2.5 sm:hidden">
+                {docs.map((d) => (
+                  <MobileListCard
+                    key={d.id}
+                    title={<span className="font-mono text-xs">{d.docNumber}</span>}
+                    badges={<><Badge status={d.docType} /><Badge status={d.status} /></>}
+                    right={inr(d.grandTotalPaise)}
+                    meta={new Date(d.issuedAt).toLocaleDateString()}
+                  />
+                ))}
+              </div>
+              {/* desktop: dense table */}
+              <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px]">
                 <tbody>
                   {docs.map((d) => (
                     <tr key={d.id}>
@@ -218,7 +238,37 @@ export default function CustomersPage() {
                 </button>
               </form>
               {bills.length === 0 && <EmptyState>no paper bills uploaded yet — photograph an old bill and upload it here</EmptyState>}
-              <div className="overflow-x-auto"><table className="w-full min-w-[480px]">
+              {/* phone: cards with the same actions */}
+              <div className="space-y-2.5 sm:hidden">
+                {bills.map((b) => (
+                  <MobileListCard
+                    key={b.id}
+                    title={b.fileName}
+                    meta={
+                      <>
+                        {b.note ? `${b.note} · ` : ''}
+                        {b.billDate ? `bill ${new Date(b.billDate).toLocaleDateString()} · ` : ''}
+                        {(b.sizeBytes / 1024).toFixed(0)} KB · uploaded {new Date(b.uploadedAt).toLocaleDateString()}
+                      </>
+                    }
+                    actions={
+                      <>
+                        <button className="btn-secondary btn-xs" onClick={() => void view(b)}>view</button>
+                        {b.mimeType.startsWith('image/') && (
+                          <button className="btn-secondary btn-xs" disabled={reading === b.id} onClick={() => void readBill(b)}>
+                            {reading === b.id ? 'reading…' : b.extracted ? 're-read' : 'read (OCR)'}
+                          </button>
+                        )}
+                        {b.extracted && (
+                          <button className="btn-secondary btn-xs" onClick={() => setShowExtract(b)}>fields</button>
+                        )}
+                      </>
+                    }
+                  />
+                ))}
+              </div>
+              {/* desktop: dense table */}
+              <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px]">
                 <tbody>
                   {bills.map((b) => (
                     <tr key={b.id}>
