@@ -16,6 +16,8 @@ import {
   Package,
   Tags,
   ReceiptText,
+  ClipboardList,
+  Truck,
   LogOut,
   type LucideIcon,
 } from 'lucide-react';
@@ -31,6 +33,8 @@ const ADMIN_NAV: [href: string, label: string, icon: LucideIcon][] = [
   ['/masters', 'Master data', Database],
   ['/customers', 'Customers', Users],
   ['/inventory', 'Inventory', Package],
+  ['/purchases', 'Purchases', Truck],
+  ['/orders', 'Orders', ClipboardList],
   ['/tagging', 'Tags & labels', Tags],
   ['/billing', 'Billing', ReceiptText],
 ];
@@ -38,10 +42,11 @@ const OPS_NAV: [href: string, label: string, icon: LucideIcon][] = [
   ['/dashboard', 'Dashboard', LayoutDashboard],
   ['/customers', 'Customers', Users],
   ['/inventory', 'Inventory', Package],
+  ['/orders', 'Orders', ClipboardList],
   ['/billing', 'Billing', ReceiptText],
 ];
 /** Pages an OPS user must not land on (deep links redirect to dashboard). */
-const ADMIN_ONLY_PATHS = ['/masters', '/tagging'];
+const ADMIN_ONLY_PATHS = ['/masters', '/tagging', '/purchases'];
 
 /** Compact labels for the phone bottom tab bar. */
 const SHORT_LABEL: Record<string, string> = {
@@ -49,6 +54,8 @@ const SHORT_LABEL: Record<string, string> = {
   'Master data': 'Masters',
   Customers: 'Customers',
   Inventory: 'Stock',
+  Purchases: 'Buy',
+  Orders: 'Orders',
   'Tags & labels': 'Tags',
   Billing: 'Billing',
 };
@@ -173,11 +180,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       {/* ---------- mobile bottom tab bar (mirrors the RN app) ---------- */}
-      <nav className="fixed inset-x-0 bottom-0 z-20 flex border-t border-white/5 bg-espresso-950 pb-[env(safe-area-inset-bottom)] lg:hidden">
+      {/* 8 admin tabs won't fit 390px comfortably — the bar scrolls sideways */}
+      <nav className="fixed inset-x-0 bottom-0 z-20 flex overflow-x-auto border-t border-white/5 bg-espresso-950 pb-[env(safe-area-inset-bottom)] lg:hidden">
         {nav.map(([href, label, Icon]) => {
           const active = pathname.startsWith(href);
           return (
-            <Link key={href} href={href} className="flex flex-1 flex-col items-center gap-0.5 pb-2.5 pt-2">
+            <Link key={href} href={href} className="flex min-w-[62px] flex-1 flex-col items-center gap-0.5 pb-2.5 pt-2">
               <span className={`rounded-full px-3.5 py-1 transition-colors ${active ? 'bg-gold-400/15' : ''}`}>
                 <Icon size={19} strokeWidth={2} className={active ? 'text-gold-300' : 'text-stone-500'} />
               </span>

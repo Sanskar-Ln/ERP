@@ -213,6 +213,31 @@ the full milestone list and ARCHITECTURE.md for the system map.
   overflow both roles/widths), 97 unit tests, 4 typechecks, mobile
   bundle.
 
+- **Post-MVP: Phase B — procurement & order pipeline** — (1) **Purchase
+  orders** (ADMIN): supplier → PO (numbered `PO-2026-000001` off the
+  generalised NumberSeries) → ORDERED → weight-verified goods receipt that
+  creates the intake **Lot** (linked back via `Lot.purchaseOrderId`) →
+  RECEIVED; items are then created against that lot through normal intake
+  so stock still never exists without its PURCHASE_IN ledger row. Money to
+  suppliers is an append-only `SupplierPayment` ledger with the
+  outstanding amount derived (over-payment rejected). (2) **Customer
+  orders** (both roles; cancel ADMIN-only): `Order`/`OrderLine` with stock
+  lines and made-to-order lines, numbered `ORD-2026-000001`, driven by a
+  pure transition state machine (`domain/orders/transitions.ts`, 5 tests)
+  — DRAFT→CONFIRMED→PROCESSING→READY→DELIVERED→COMPLETED with CANCELLED
+  from any pre-delivery state. CONFIRMED reserves every stock line
+  (RESERVE annotation), CANCELLED releases them, DELIVERED requires a
+  linked billing document — money stays on Documents. (3) Web gains
+  `/orders` (pipeline grouped by status, create, advance) and `/purchases`
+  (PO create/order/receive, supplier payments), nav grows to 8 admin /
+  5 OPS tabs with a scrollable phone tab bar and an OPS redirect off
+  `/purchases`. Verified: 27-check API smoke (PO lifecycle incl. terminal
+  RECEIVED and over-payment 400, order lifecycle incl. illegal skips,
+  reserve-on-confirm, deliver-against-invoice, release-on-cancel, RBAC
+  403s) + 23-check Playwright sweep (both new pages at 390/1440 for both
+  roles, order and PO created through the UI, zero overflow/errors),
+  102 unit tests, 4 typechecks, mobile production bundle.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

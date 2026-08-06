@@ -134,6 +134,23 @@ enum PaymentKind {
   REFUND
 }
 
+enum PurchaseOrderStatus {
+  DRAFT
+  ORDERED
+  RECEIVED
+  CANCELLED
+}
+
+enum OrderStatus {
+  DRAFT
+  CONFIRMED
+  PROCESSING
+  READY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
 // ------------------------------------------------------------- platform
 
 model Tenant {
@@ -439,12 +456,122 @@ model Lot {
   lotNo      String
   supplierId String?
   karigarId  String?
+  /** set when this lot was created by receiving a purchase order */
+  purchaseOrderId String? @unique
   receivedAt DateTime
   note       String?
 
   items Item[]
 
   @@unique([tenantId, lotNo])
+  @@index([tenantId])
+}
+
+// ------------------------------------------------------------- procurement
+
+// Supplier → PO → goods receipt (weight-verified) → Lot → inventory intake.
+// The PO freezes the agreed lines; receipt records verified weights.
+model PurchaseOrder {
+  id              String              @id
+  tenantId        String
+  poNumber        String
+  supplierId      String
+  branchId        String
+  status          PurchaseOrderStatus @default(DRAFT)
+  expectedAt      DateTime?
+  orderedAt       DateTime?
+  receivedAt      DateTime?
+  note            String?
+  totalValuePaise BigInt              @default(0)
+  createdByUserId String?
+  createdAt       DateTime            @default(now())
+
+  lines            PurchaseOrderLine[]
+  supplierPayments SupplierPayment[]
+
+  @@unique([tenantId, poNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, supplierId])
+}
+
+model PurchaseOrderLine {
+  id              String        @id
+  tenantId        String
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  lineNo          Int
+  description     String
+  category        String?
+  pieces          Int
+  expectedWeightG Decimal?      @db.Decimal(12, 3)
+  /** verified at goods receipt */
+  receivedWeightG Decimal?      @db.Decimal(12, 3)
+  purityId        String?
+  ratePaisePer10g BigInt?
+  valuePaise      BigInt
+
+  @@unique([purchaseOrderId, lineNo])
+  @@index([tenantId])
+}
+
+// Money paid TO the supplier against a PO. Append-only, like Payment.
+model SupplierPayment {
+  id              String        @id
+  tenantId        String
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  mode            PaymentMode
+  amountPaise     BigInt
+  reference       String?
+  note            String?
+  paidAt          DateTime      @default(now())
+  createdByUserId String?
+  createdAt       DateTime      @default(now())
+
+  @@index([tenantId, purchaseOrderId])
+}
+
+// ------------------------------------------------------------- orders
+
+// Customer-order pipeline (workflow object, NOT a financial document):
+// DRAFT→CONFIRMED→PROCESSING→READY→DELIVERED→COMPLETED, CANCELLED from any
+// pre-DELIVERED state. Confirming reserves stock lines; cancelling releases
+// them; billing links via documentId (money stays on Documents).
+model Order {
+  id              String      @id
+  tenantId        String
+  orderNumber     String
+  customerId      String
+  branchId        String
+  status          OrderStatus @default(DRAFT)
+  note            String?
+  /** the estimate/invoice this order was billed as (set on/before DELIVERED) */
+  documentId      String?
+  cancelReason    String?
+  createdByUserId String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  lines OrderLine[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId, status])
+  @@index([tenantId, customerId])
+}
+
+model OrderLine {
+  id              String   @id
+  tenantId        String
+  orderId         String
+  order           Order    @relation(fields: [orderId], references: [id])
+  lineNo          Int
+  /** stock item (reserved on CONFIRMED) — null for made-to-order lines */
+  itemId          String?
+  description     String
+  pieces          Int      @default(1)
+  expectedWeightG Decimal? @db.Decimal(12, 3)
+
+  @@unique([orderId, lineNo])
   @@index([tenantId])
 }
 

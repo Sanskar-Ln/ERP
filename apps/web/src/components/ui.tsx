@@ -53,6 +53,14 @@ const STATUS_TONE: Record<string, string> = {
   // rate sources
   MANUAL_FIX: 'badge-warn',
   FEED: 'badge-neutral',
+  // order pipeline
+  CONFIRMED: 'badge-info',
+  PROCESSING: 'badge-warn',
+  READY: 'badge-good',
+  DELIVERED: 'badge-info',
+  COMPLETED: 'badge-good',
+  // purchase orders
+  ORDERED: 'badge-info',
 };
 
 /** Status pill — tone by status, text label always visible. */

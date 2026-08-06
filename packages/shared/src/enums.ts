@@ -220,3 +220,28 @@ export const DiscountType = {
   PERCENT: 'PERCENT',
 } as const;
 export type DiscountType = (typeof DiscountType)[keyof typeof DiscountType];
+
+/** Procurement lifecycle: supplier → PO → goods received into a Lot. */
+export const PurchaseOrderStatus = {
+  DRAFT: 'DRAFT',
+  ORDERED: 'ORDERED',
+  RECEIVED: 'RECEIVED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type PurchaseOrderStatus = (typeof PurchaseOrderStatus)[keyof typeof PurchaseOrderStatus];
+
+/**
+ * Customer-order lifecycle (the workshop/counter pipeline). Orders are
+ * WORKFLOW objects, not financial documents — money stays on Documents;
+ * an order links to its estimate/invoice via documentId.
+ */
+export const OrderStatus = {
+  DRAFT: 'DRAFT',
+  CONFIRMED: 'CONFIRMED',
+  PROCESSING: 'PROCESSING',
+  READY: 'READY',
+  DELIVERED: 'DELIVERED',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+export type OrderStatus = (typeof OrderStatus)[keyof typeof OrderStatus];

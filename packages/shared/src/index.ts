@@ -13,3 +13,4 @@ export * from './schemas/master-data';
 export * from './schemas/inventory';
 export * from './schemas/tagging';
 export * from './schemas/billing';
+export * from './schemas/orders';

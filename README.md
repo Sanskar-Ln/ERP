@@ -127,7 +127,15 @@ transfers, reports, or corrections (cancel / movement reverse).
 | Email | Role | Sees |
 |-------|------|------|
 | admin@demo.in | ADMIN | everything (full web nav + mobile admin view) |
-| ops@demo.in | OPS | web: Dashboard / Customers / Inventory / Billing; mobile counter view |
+| ops@demo.in | OPS | web: Dashboard / Customers / Inventory / Orders / Billing; mobile counter view |
+
+The **Orders** page is the counter & workshop pipeline
+(DRAFT → CONFIRMED → PROCESSING → READY → DELIVERED → COMPLETED):
+confirming an order holds its stock items (RESERVED), delivery requires
+the billing document, and cancelling (admin) releases the hold.
+**Purchases** (admin) runs procurement: supplier → purchase order →
+weight-verified goods receipt, which creates the intake lot you then add
+items against on Inventory — plus append-only supplier payments.
 
 ### 7. Tests & checks
 

@@ -21,8 +21,17 @@ const PREFIX: Record<DocType, string> = {
  * MUST be called inside the document-issue transaction.
  */
 export async function nextDocNumber(tx: TenantTx, tenantId: string, docType: DocType, at: Date): Promise<string> {
+  return nextSeriesNumber(tx, tenantId, PREFIX[docType], at);
+}
+
+/**
+ * Generic yearly counter for any prefixed series (PO-2026-000001,
+ * ORD-2026-000001, …). Same row-locking guarantees as document numbers.
+ * MUST be called inside the creating transaction.
+ */
+export async function nextSeriesNumber(tx: TenantTx, tenantId: string, prefix: string, at: Date): Promise<string> {
   const year = at.getFullYear();
-  const seriesCode = `${PREFIX[docType]}-${year}`;
+  const seriesCode = `${prefix}-${year}`;
 
   // Try to increment an existing counter (row-locked by the UPDATE)…
   const updated = await tx.numberSeries.updateMany({
