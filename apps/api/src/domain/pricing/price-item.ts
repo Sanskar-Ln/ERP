@@ -13,6 +13,9 @@
  *   fixed at intake; the stored `valuePaise` is authoritative at sale).
  * - Making charge: FLAT per piece / PER_GRAM on net metal weight /
  *   PERCENT_OF_METAL (bps) on the wastage-inclusive metal value.
+ * - Extra charges (hallmarking / packing / other) are flat per-piece-set
+ *   amounts added to the line gross; for GST they ride the making/service
+ *   path (they are ancillary services, not metal).
  * - Negotiated making discount reduces making only, floored at zero —
  *   a discount can waive making but never turns it into a rebate on metal.
  */
@@ -43,6 +46,8 @@ export interface PriceItemInput {
   making: { type: MakingChargeType; value: number };
   /** negotiated discount on making charges, paise */
   makingDiscountPaise: Paise;
+  /** flat extra charges (hallmark + packing + other), paise — default 0 */
+  extraChargesPaise?: Paise;
 }
 
 export interface ItemPricing {
@@ -53,7 +58,9 @@ export interface ItemPricing {
   /** making actually charged (≥ 0) */
   makingPaise: Paise;
   makingDiscountAppliedPaise: Paise;
-  /** metal + stones + making (after discount) */
+  /** hallmark + packing + other flat charges */
+  extraChargesPaise: Paise;
+  /** metal + stones + making (after discount) + extra charges */
   grossPaise: Paise;
   /** total net metal weight (mg) — used for per-gram making + snapshots */
   totalNetWeightMg: number;
@@ -98,13 +105,19 @@ export function priceItem(input: PriceItemInput): ItemPricing {
   const discountApplied = Math.min(input.makingDiscountPaise, makingBefore);
   const making = makingBefore - discountApplied;
 
+  const extraCharges = input.extraChargesPaise ?? 0;
+  if (!Number.isSafeInteger(extraCharges) || extraCharges < 0) {
+    throw new RangeError(`invalid extra charges ${extraCharges}`);
+  }
+
   return {
     metalValuePaise: metalValue,
     stoneValuePaise: stoneValue,
     makingBeforeDiscountPaise: makingBefore,
     makingPaise: making,
     makingDiscountAppliedPaise: discountApplied,
-    grossPaise: metalValue + stoneValue + making,
+    extraChargesPaise: extraCharges,
+    grossPaise: metalValue + stoneValue + making + extraCharges,
     totalNetWeightMg: totalNetMg,
     totalChargeableMg,
   };

@@ -29,11 +29,17 @@ export function PageHeader({ title, description, actions }: { title: string; des
 const STATUS_TONE: Record<string, string> = {
   // stock
   IN_STOCK: 'badge-good',
+  RESERVED: 'badge-warn',
   SOLD: 'badge-info',
   IN_TRANSIT: 'badge-warn',
   WITH_KARIGAR: 'badge-warn',
   SCRAPPED: 'badge-neutral',
   RECEIVED: 'badge-good',
+  // payment settlement
+  UNPAID: 'badge-danger',
+  PARTIALLY_PAID: 'badge-warn',
+  PAID: 'badge-good',
+  REFUNDED: 'badge-neutral',
   // documents
   ISSUED: 'badge-good',
   CONVERTED: 'badge-info',

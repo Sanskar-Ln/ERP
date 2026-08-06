@@ -103,6 +103,10 @@ export const MovementType = {
   EXCHANGE_IN: 'EXCHANGE_IN',
   KARIGAR_ISSUE: 'KARIGAR_ISSUE',
   KARIGAR_RECEIPT: 'KARIGAR_RECEIPT',
+  /** zero-quantity annotation: item held for a customer/order (status flip) */
+  RESERVE: 'RESERVE',
+  /** zero-quantity annotation: reservation released back to open stock */
+  UNRESERVE: 'UNRESERVE',
   REVERSAL: 'REVERSAL',
 } as const;
 export type MovementType = (typeof MovementType)[keyof typeof MovementType];
@@ -171,9 +175,48 @@ export type TransferStatus = (typeof TransferStatus)[keyof typeof TransferStatus
 /** Item stock status derived from movements/tags. */
 export const ItemStatus = {
   IN_STOCK: 'IN_STOCK',
+  /** physically on hand but held for a customer/order — still counted in stock */
+  RESERVED: 'RESERVED',
   SOLD: 'SOLD',
   IN_TRANSIT: 'IN_TRANSIT',
   WITH_KARIGAR: 'WITH_KARIGAR',
   SCRAPPED: 'SCRAPPED',
 } as const;
 export type ItemStatus = (typeof ItemStatus)[keyof typeof ItemStatus];
+
+/** How money changed hands for an invoice payment. */
+export const PaymentMode = {
+  CASH: 'CASH',
+  UPI: 'UPI',
+  CARD: 'CARD',
+  BANK_TRANSFER: 'BANK_TRANSFER',
+  OTHER: 'OTHER',
+} as const;
+export type PaymentMode = (typeof PaymentMode)[keyof typeof PaymentMode];
+
+/**
+ * Direction of a payment row. Payments are APPEND-ONLY: a wrong payment is
+ * never edited or deleted — money returned is a REFUND row.
+ */
+export const PaymentKind = {
+  PAYMENT: 'PAYMENT',
+  REFUND: 'REFUND',
+} as const;
+export type PaymentKind = (typeof PaymentKind)[keyof typeof PaymentKind];
+
+/** Settlement state of a document, DERIVED from its payment rows (never stored). */
+export const PaymentStatus = {
+  UNPAID: 'UNPAID',
+  PARTIALLY_PAID: 'PARTIALLY_PAID',
+  PAID: 'PAID',
+  /** everything paid was returned (e.g. after cancellation) */
+  REFUNDED: 'REFUNDED',
+} as const;
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
+
+/** How a discount is quoted: flat paise or percent (basis points). */
+export const DiscountType = {
+  FLAT: 'FLAT',
+  PERCENT: 'PERCENT',
+} as const;
+export type DiscountType = (typeof DiscountType)[keyof typeof DiscountType];

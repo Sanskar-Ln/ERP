@@ -6,7 +6,7 @@
  * rules / PMLA). The MVP stores KYC documents on the customer; enforcement
  * hooks live in billing (which can check `kycDocs` before issuing).
  */
-import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
 import {
@@ -16,10 +16,12 @@ import {
   zCreateKarigar,
   zCreateSupplier,
   zId,
+  zUpdateCustomerRate,
   type CreateCustomer,
   type CreateKarigar,
   type CreateSupplier,
   type JwtClaims,
+  type UpdateCustomerRate,
 } from '@erp/shared';
 import { CurrentUser, Roles } from '../../platform/auth/auth.decorators';
 import { TenancyService } from '../../platform/tenancy/tenancy.service';
@@ -52,6 +54,25 @@ export class PartiesController {
   @Get('customers/:id')
   getCustomer(@CurrentUser() user: JwtClaims, @Param('id', new ZodPipe(zId)) id: string) {
     return this.tenancy.client(user.tenantId).customer.findUniqueOrThrow({ where: { id } });
+  }
+
+  /**
+   * Set the customer-specific rate adjustment (signed bps on the board
+   * rate; −100 = 1% concession). Pricing concessions are ADMIN-only —
+   * OPS negotiates within the discount cap instead.
+   */
+  @Patch('customers/:id/rate')
+  @Roles(Role.ADMIN)
+  @ApiZodBody(zUpdateCustomerRate)
+  setCustomerRate(
+    @CurrentUser() user: JwtClaims,
+    @Param('id', new ZodPipe(zId)) id: string,
+    @Body(new ZodPipe(zUpdateCustomerRate)) body: UpdateCustomerRate,
+  ) {
+    return this.tenancy.client(user.tenantId).customer.update({
+      where: { id },
+      data: { rateAdjustBps: body.rateAdjustBps },
+    });
   }
 
   /** Any counter role may register a customer (walk-in flow). */

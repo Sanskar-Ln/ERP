@@ -25,6 +25,21 @@ interface Metal {
   name: string;
   purities: { id: string; label: string }[];
 }
+interface PaymentSummary {
+  paidPaise: number;
+  refundedPaise: number;
+  netPaidPaise: number;
+  duePaise: number;
+  status: string;
+}
+interface Payment {
+  id: string;
+  kind: string;
+  mode: string;
+  amountPaise: number;
+  reference: string | null;
+  paidAt: string;
+}
 interface Doc {
   id: string;
   docType: string;
@@ -34,14 +49,96 @@ interface Doc {
   grandTotalPaise: number;
   totalTaxPaise: number;
   convertedFromId: string | null;
+  paymentSummary?: PaymentSummary;
 }
 interface DocDetail extends Doc {
   subtotalPaise: number;
   discountPaise: number;
   exchangeValuePaise: number;
   taxableValuePaise: number;
-  lines: { lineNo: number; description: string; hsnCode: string; grossPaise: number; taxablePaise: number }[];
+  lines: { lineNo: number; description: string; hsnCode: string; extraChargesPaise: number; grossPaise: number; taxablePaise: number }[];
   taxLines: { label: string; taxablePaise: number; taxPaise: number }[];
+  payments?: Payment[];
+}
+
+const PAYMENT_MODES = ['CASH', 'UPI', 'CARD', 'BANK_TRANSFER', 'OTHER'] as const;
+
+/**
+ * Settlement strip + record-payment form on a document detail.
+ * Status is server-derived (append-only ledger); this just records rows.
+ */
+function PaymentPanel({ doc, onChanged }: { doc: DocDetail; onChanged: (d: DocDetail) => void }) {
+  const [mode, setMode] = useState<string>('CASH');
+  const [amount, setAmount] = useState('');
+  const [reference, setReference] = useState('');
+  const [err, setErr] = useState('');
+  const s = doc.paymentSummary;
+  if (!s) return null;
+  // estimates/challans can take advances too, but cancelled docs only refund
+  const canPay = doc.status !== 'CANCELLED' && s.duePaise > 0;
+  const canRefund = isAdmin() && s.netPaidPaise > 0;
+
+  async function record(kind: 'PAYMENT' | 'REFUND') {
+    setErr('');
+    try {
+      await api('POST', `/documents/${doc.id}/payments`, {
+        kind,
+        mode,
+        amountPaise: Math.round(Number(amount) * 100),
+        reference: reference || undefined,
+      });
+      setAmount('');
+      setReference('');
+      onChanged(await api<DocDetail>('GET', `/documents/${doc.id}`));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'failed');
+    }
+  }
+
+  return (
+    <div className="mt-4 rounded-xl border border-stone-200 bg-stone-50/60 p-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="section-title">Payment</span>
+          <Badge status={s.status} />
+        </div>
+        <div className="text-sm tabular-nums">
+          paid <span className="font-medium">{inr(s.netPaidPaise)}</span>
+          {' · '}due <span className={`font-semibold ${s.duePaise > 0 ? 'text-red-700' : 'text-emerald-700'}`}>{inr(s.duePaise)}</span>
+        </div>
+      </div>
+      {(doc.payments?.length ?? 0) > 0 && (
+        <ul className="mt-2 space-y-1 text-xs text-stone-500">
+          {doc.payments!.map((p) => (
+            <li key={p.id} className="flex flex-wrap gap-2">
+              <span>{new Date(p.paidAt).toLocaleDateString()}</span>
+              <span className={p.kind === 'REFUND' ? 'text-red-600' : ''}>{p.kind === 'REFUND' ? 'refund' : p.mode}</span>
+              {p.reference && <span className="font-mono">{p.reference}</span>}
+              <span className="ml-auto font-medium tabular-nums">{p.kind === 'REFUND' ? '−' : ''}{inr(p.amountPaise)}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {(canPay || canRefund) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <select className="input w-32" value={mode} onChange={(e) => setMode(e.target.value)}>
+            {PAYMENT_MODES.map((m) => (
+              <option key={m} value={m}>{m.replaceAll('_', ' ')}</option>
+            ))}
+          </select>
+          <input className="input w-32" placeholder="₹ amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
+          <input className="input w-40" placeholder="ref / UTR (optional)" value={reference} onChange={(e) => setReference(e.target.value)} />
+          {canPay && (
+            <button className="btn" disabled={!amount} onClick={() => void record('PAYMENT')}>Record payment</button>
+          )}
+          {canRefund && (
+            <button className="btn-danger" disabled={!amount} onClick={() => void record('REFUND')}>Refund</button>
+          )}
+        </div>
+      )}
+      {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
+    </div>
+  );
 }
 
 /**
@@ -107,6 +204,10 @@ export default function BillingPage() {
   const [history, setHistory] = useState<Doc[]>([]);
   const [cartItemIds, setCartItemIds] = useState<string[]>([]);
   const [pickItem, setPickItem] = useState('');
+  // negotiated discount: flat ₹ or % — enforced against the OPS cap server-side
+  const [discType, setDiscType] = useState<'FLAT' | 'PERCENT'>('FLAT');
+  const [discValue, setDiscValue] = useState('');
+  const [opsCapBps, setOpsCapBps] = useState<number | null>(null);
   // optional old-gold exchange
   const [exOn, setExOn] = useState(false);
   const [exPurityId, setExPurityId] = useState('');
@@ -120,6 +221,7 @@ export default function BillingPage() {
   useEffect(() => {
     void api<Customer[]>('GET', '/customers').then(setCustomers);
     void api<Metal[]>('GET', '/metals').then(setMetals);
+    if (!isAdmin()) void api<{ opsMaxDiscountBps: number }>('GET', '/settings').then((s) => setOpsCapBps(s.opsMaxDiscountBps));
     load();
   }, []);
 
@@ -146,6 +248,11 @@ export default function BillingPage() {
         ratePaisePer10g: Math.round(Number(exRate) * 100),
       });
     }
+    // FLAT is entered in ₹ (→ paise); PERCENT in % (→ basis points)
+    const discount =
+      discValue && Number(discValue) > 0
+        ? { type: discType, value: Math.round(Number(discValue) * 100) }
+        : undefined;
     try {
       const doc = await api<DocDetail & { warnings: string[] }>('POST', '/documents', {
         docType,
@@ -155,10 +262,12 @@ export default function BillingPage() {
           lines: cartItemIds.map((itemId) => ({ itemId })),
           oldGoldExchanges: exchanges,
           cartDiscountPaise: 0,
+          discount,
         },
       });
       setMsg(`${doc.docNumber} issued${doc.warnings?.length ? ` — ${doc.warnings.join('; ')}` : ''}`);
       setCartItemIds([]);
+      setDiscValue('');
       load();
       setDetail(doc);
       void api<Doc[]>('GET', `/documents?customerId=${customerId}`).then(setHistory);
@@ -260,6 +369,22 @@ export default function BillingPage() {
             <button className="text-xs text-red-600" onClick={() => setCartItemIds([])}>clear</button>
           </p>
         )}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm text-stone-600">Discount</span>
+          <select className="input w-24" value={discType} onChange={(e) => setDiscType(e.target.value as 'FLAT' | 'PERCENT')}>
+            <option value="FLAT">₹</option>
+            <option value="PERCENT">%</option>
+          </select>
+          <input
+            className="input w-28"
+            placeholder={discType === 'FLAT' ? 'amount ₹' : 'percent'}
+            value={discValue}
+            onChange={(e) => setDiscValue(e.target.value)}
+          />
+          {opsCapBps != null && (
+            <span className="hint">your limit: {(opsCapBps / 100).toFixed(1)}% of the bill</span>
+          )}
+        </div>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={exOn} onChange={(e) => setExOn(e.target.checked)} />
           old-gold exchange (GST charged on value addition only)
@@ -300,16 +425,22 @@ export default function BillingPage() {
                   <MobileListCard
                     key={d.id}
                     title={<span className="font-mono text-xs">{d.docNumber}</span>}
-                    badges={<><Badge status={d.docType} /><Badge status={d.status} /></>}
+                    badges={
+                      <>
+                        <Badge status={d.docType} />
+                        <Badge status={d.status} />
+                        {d.docType === 'TAX_INVOICE' && d.paymentSummary && <Badge status={d.paymentSummary.status} />}
+                      </>
+                    }
                     right={inr(d.grandTotalPaise)}
                     onClick={() => void open(d.id)}
                   />
                 ))}
               </div>
               {/* desktop: dense table */}
-              <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px]">
+              <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[520px]">
                 <thead>
-                  <tr><th className="th">Number</th><th className="th">Type</th><th className="th">Status</th><th className="th">Total</th></tr>
+                  <tr><th className="th">Number</th><th className="th">Type</th><th className="th">Status</th><th className="th">Payment</th><th className="th">Total</th></tr>
                 </thead>
                 <tbody>
                   {docs.map((d) => (
@@ -317,6 +448,7 @@ export default function BillingPage() {
                       <td className="td font-mono text-xs">{d.docNumber}</td>
                       <td className="td"><Badge status={d.docType} /></td>
                       <td className="td"><Badge status={d.status} /></td>
+                      <td className="td">{d.docType === 'TAX_INVOICE' && d.paymentSummary ? <Badge status={d.paymentSummary.status} /> : <span className="hint">—</span>}</td>
                       <td className="td num font-medium">{inr(d.grandTotalPaise)}</td>
                     </tr>
                   ))}
@@ -356,6 +488,10 @@ export default function BillingPage() {
             </table></div>
             <div className="mt-3 space-y-1 text-sm">
               <div>Subtotal: {inr(detail.subtotalPaise)}</div>
+              {(() => {
+                const charges = detail.lines.reduce((s, l) => s + (l.extraChargesPaise ?? 0), 0);
+                return charges > 0 ? <div className="text-neutral-600">incl. hallmark/packing charges: {inr(charges)}</div> : null;
+              })()}
               {detail.discountPaise > 0 && <div>Discount: −{inr(detail.discountPaise)}</div>}
               {detail.exchangeValuePaise > 0 && <div>Old gold: −{inr(detail.exchangeValuePaise)}</div>}
               <div>Taxable: {inr(detail.taxableValuePaise)}</div>
@@ -367,6 +503,7 @@ export default function BillingPage() {
                 <span className="text-2xl font-semibold text-stone-900">{inr(detail.grandTotalPaise)}</span>
               </div>
             </div>
+            <PaymentPanel doc={detail} onChanged={setDetail} />
           </section>
         )}
       </div>

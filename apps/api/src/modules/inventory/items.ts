@@ -38,8 +38,11 @@ import { priceItem } from '../../domain/pricing/price-item';
 const zItemQuery = z.object({
   branchId: zId.optional(),
   status: z.nativeEnum(ItemStatus).optional(),
+  category: z.string().max(60).optional(),
   q: z.string().max(120).optional(),
 });
+
+const zReservationNote = z.object({ note: z.string().max(300).optional() });
 
 @Injectable()
 export class ItemsService {
@@ -79,12 +82,19 @@ export class ItemsService {
           itemCode: input.itemCode,
           name: input.name,
           description: input.description ?? null,
+          category: input.category ?? null,
+          subCategory: input.subCategory ?? null,
           branchId: input.branchId,
           lotId: input.lotId ?? null,
           hsnCodeId: input.hsnCodeId,
           pieces: input.pieces,
           makingChargeType: input.makingCharge.type,
           makingChargeValue: BigInt(input.makingCharge.value),
+          hallmarkChargePaise: BigInt(input.hallmarkChargePaise),
+          packingChargePaise: BigInt(input.packingChargePaise),
+          otherChargePaise: BigInt(input.otherChargePaise),
+          hallmarkNo: input.hallmarkNo ?? null,
+          hallmarkAgency: input.hallmarkAgency ?? null,
           isStudded: input.isStudded,
           isPrecious: input.isPrecious,
           status: ItemStatus.IN_STOCK,
@@ -149,6 +159,53 @@ export class ItemsService {
 
     return item;
   }
+
+  /**
+   * Reserve (hold for a customer/order) or release an item.
+   * BUSINESS RULE: a reserved piece is still ON HAND — the ledger row posts
+   * ZERO quantities (enforced by movement-rules) and only the status flips.
+   * Selling a RESERVED item is allowed; that is what the hold was for.
+   */
+  async setReservation(user: JwtClaims, itemId: string, reserve: boolean, note?: string) {
+    const db = this.tenancy.client(user.tenantId);
+    return db.$transaction(async (tx) => {
+      const item = await tx.item.findUniqueOrThrow({ where: { id: itemId } });
+      if (reserve && item.status !== ItemStatus.IN_STOCK) {
+        throw new BadRequestException(`only IN_STOCK items can be reserved (item is ${item.status})`);
+      }
+      if (!reserve && item.status !== ItemStatus.RESERVED) {
+        throw new BadRequestException(`item is ${item.status}, not RESERVED`);
+      }
+      const movementType = reserve ? MovementType.RESERVE : MovementType.UNRESERVE;
+      const q = signedQuantities(movementType, 0, 0); // annotation row — zero quantities
+      await tx.stockMovement.create({
+        data: {
+          id: newId(),
+          tenantId: user.tenantId,
+          itemId,
+          movementType,
+          branchId: item.branchId,
+          pieces: q.pieces,
+          grossWeightG: mgToGrams(q.grossWeightMg),
+          note: note ?? null,
+          actorUserId: user.sub,
+        },
+      });
+      const updated = await tx.item.update({
+        where: { id: itemId },
+        data: { status: reserve ? ItemStatus.RESERVED : ItemStatus.IN_STOCK },
+      });
+      await this.audit.log(tx, {
+        actorUserId: user.sub,
+        entity: 'Item',
+        entityId: itemId,
+        action: reserve ? 'RESERVE' : 'UNRESERVE',
+        before: { status: item.status },
+        after: { status: updated.status, note },
+      });
+      return updated;
+    });
+  }
 }
 
 @ApiTags('inventory')
@@ -173,12 +230,35 @@ export class ItemsController {
       where: {
         branchId: q.branchId,
         status: q.status,
+        ...(q.category ? { category: { equals: q.category, mode: 'insensitive' } } : {}),
         ...(q.q ? { OR: [{ name: { contains: q.q, mode: 'insensitive' } }, { itemCode: { contains: q.q.toUpperCase() } }] } : {}),
       },
       include: { metalComponents: true, stoneComponents: true },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
+  }
+
+  /** Hold an IN_STOCK item for a customer/order (both roles — counter flow). */
+  @Post('items/:id/reserve')
+  @ApiZodBody(zReservationNote)
+  reserve(
+    @CurrentUser() user: JwtClaims,
+    @Param('id', new ZodPipe(zId)) id: string,
+    @Body(new ZodPipe(zReservationNote)) body: z.infer<typeof zReservationNote>,
+  ) {
+    return this.items.setReservation(user, id, true, body.note);
+  }
+
+  /** Release a RESERVED item back to open stock. */
+  @Post('items/:id/release')
+  @ApiZodBody(zReservationNote)
+  release(
+    @CurrentUser() user: JwtClaims,
+    @Param('id', new ZodPipe(zId)) id: string,
+    @Body(new ZodPipe(zReservationNote)) body: z.infer<typeof zReservationNote>,
+  ) {
+    return this.items.setReservation(user, id, false, body.note);
   }
 
   /** Scanner lookup: resolve a barcode's item code to the full item. */
@@ -235,6 +315,8 @@ export class ItemsController {
       stoneValuesPaise: item.stoneComponents.map((sc) => Number(sc.valuePaise)),
       making: { type: item.makingChargeType as never, value: Number(item.makingChargeValue) },
       makingDiscountPaise: 0,
+      extraChargesPaise:
+        Number(item.hallmarkChargePaise) + Number(item.packingChargePaise) + Number(item.otherChargePaise),
     });
     return { itemCode: item.itemCode, name: item.name, pricedAt: now.toISOString(), ratesUsed, ...pricing };
   }

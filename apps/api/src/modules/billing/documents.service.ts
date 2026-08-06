@@ -14,9 +14,11 @@
  * Domain boundaries: pricing math is domain/pricing, GST math is
  * domain/billing — this service only orchestrates I/O around them.
  */
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import {
+  applyBps,
   Cart,
+  DiscountType,
   DocStatus,
   DocType,
   gramsToMg,
@@ -25,6 +27,9 @@ import {
   mgToGrams,
   MovementType,
   newId,
+  Role,
+  roundDiv,
+  type DiscountSpec,
   type JwtClaims,
 } from '@erp/shared';
 import { TenancyService, type TenantTx } from '../../platform/tenancy/tenancy.service';
@@ -35,6 +40,13 @@ import type { TaxRuleRow } from '../../domain/tax/resolve-tax-rule';
 import { signedQuantities } from '../../domain/inventory/movement-rules';
 import { allocate } from '@erp/shared';
 import { nextDocNumber } from './number-series';
+
+/** Resolve a flat/percent discount spec against its base value, in paise. */
+const resolveDiscount = (spec: DiscountSpec | undefined, basePaise: number): number =>
+  spec == null ? 0 : spec.type === DiscountType.FLAT ? spec.value : applyBps(basePaise, spec.value);
+
+/** Statuses a line item may be in to be billable on an invoice/challan. */
+const SELLABLE = new Set<string>([ItemStatus.IN_STOCK, ItemStatus.RESERVED]);
 
 @Injectable()
 export class DocumentsService {
@@ -83,7 +95,8 @@ export class DocumentsService {
         if (!item) throw new NotFoundException(`item ${line.itemId} not found`);
         if (docType !== DocType.ESTIMATE) {
           // Estimates may quote items anywhere; invoices/challans move stock.
-          if (item.status !== ItemStatus.IN_STOCK) {
+          // RESERVED items are sellable — selling is what the hold was FOR.
+          if (!SELLABLE.has(item.status)) {
             throw new BadRequestException(`item ${item.itemCode} is not in stock (${item.status})`);
           }
           if (item.branchId !== cart.branchId) {
@@ -92,10 +105,13 @@ export class DocumentsService {
         }
 
         // Resolve a board rate for every metal component (or the line override).
+        // CUSTOMER-SPECIFIC RATE: the customer's signed bps adjustment shifts
+        // the BOARD rate (−100 = 1% concession); explicit overrides win as-is.
         const metalInputs = [];
         const rateSnapshots = [];
         for (const mc of item.metalComponents) {
           let ratePaisePer10g: number;
+          let boardRatePaisePer10g: number | null = null;
           if (line.metalRatePaisePer10gOverride != null) {
             ratePaisePer10g = line.metalRatePaisePer10gOverride;
           } else {
@@ -108,7 +124,8 @@ export class DocumentsService {
                 `no board rate for metal ${mc.metalId} purity ${mc.purityId} — fix a rate first`,
               );
             }
-            ratePaisePer10g = Number(rate.ratePaisePer10g);
+            boardRatePaisePer10g = Number(rate.ratePaisePer10g);
+            ratePaisePer10g = boardRatePaisePer10g + roundDiv(boardRatePaisePer10g * customer.rateAdjustBps, 10_000);
           }
           metalInputs.push({
             netWeightMg: gramsToMg(mc.netWeightG.toFixed(3)),
@@ -122,16 +139,21 @@ export class DocumentsService {
             netWeightG: mc.netWeightG.toFixed(3),
             wastageBps: mc.wastageBps,
             ratePaisePer10g,
+            boardRatePaisePer10g,
+            customerRateAdjustBps: customer.rateAdjustBps,
             rateOverridden: line.metalRatePaisePer10gOverride != null,
           });
         }
 
+        const extraChargesPaise =
+          Number(item.hallmarkChargePaise) + Number(item.packingChargePaise) + Number(item.otherChargePaise);
         const pricing = priceItem({
           pieces: item.pieces,
           metalComponents: metalInputs,
           stoneValuesPaise: item.stoneComponents.map((sc) => Number(sc.valuePaise)),
           making: { type: item.makingChargeType as MakingChargeType, value: Number(item.makingChargeValue) },
           makingDiscountPaise: line.makingDiscountPaise,
+          extraChargesPaise,
         });
 
         lineNo += 1;
@@ -157,6 +179,12 @@ export class DocumentsService {
             })),
             making: { type: item.makingChargeType, value: Number(item.makingChargeValue) },
             makingDiscountPaise: line.makingDiscountPaise,
+            extraCharges: {
+              hallmarkPaise: Number(item.hallmarkChargePaise),
+              packingPaise: Number(item.packingChargePaise),
+              otherPaise: Number(item.otherChargePaise),
+            },
+            lineDiscount: line.discount ?? null,
             pricedAt: now.toISOString(),
           },
         });
@@ -171,19 +199,46 @@ export class DocumentsService {
       });
       const exchangeTotal = exchanges.reduce((s, e) => s + e.valuePaise, 0);
 
-      // ---------- prorate the cart discount across lines ----------
+      // ---------- resolve discounts (line-level + cart-level) ----------
+      // Each line may carry its own flat/percent discount; the cart-level
+      // discount (flat/percent `discount` spec, or the legacy paise field)
+      // is then prorated across what remains of each line.
       const lineGross = priced.map((p) => p.pricing.grossPaise);
-      const lineDiscounts =
-        cart.cartDiscountPaise > 0 && priced.length > 0
-          ? allocate(Math.min(cart.cartDiscountPaise, lineGross.reduce((a, b) => a + b, 0)), lineGross)
-          : priced.map(() => 0);
+      const ownDiscounts = cart.lines.map((l, i) => Math.min(resolveDiscount(l.discount, lineGross[i]!), lineGross[i]!));
+      const grossAfterOwn = lineGross.map((g, i) => g - ownDiscounts[i]!);
+      const subtotal = lineGross.reduce((a, b) => a + b, 0);
+      const cartDiscountRequested = cart.discount ? resolveDiscount(cart.discount, subtotal) : cart.cartDiscountPaise;
+      const cartDiscount = Math.min(cartDiscountRequested, grossAfterOwn.reduce((a, b) => a + b, 0));
+      const cartShares =
+        cartDiscount > 0 && priced.length > 0 ? allocate(cartDiscount, grossAfterOwn) : priced.map(() => 0);
+      const lineDiscounts = ownDiscounts.map((own, i) => own + cartShares[i]!);
+
+      // ---------- RBAC discount cap ----------
+      // OPS may discount up to the tenant's cap (bps of the pre-discount
+      // value, making discounts included); ADMIN is unrestricted. Enforced
+      // HERE, server-side — the UI hint is a courtesy, not the control.
+      if (user.role !== Role.ADMIN) {
+        const makingDiscounts = priced.reduce((s, p) => s + p.pricing.makingDiscountAppliedPaise, 0);
+        const totalDiscount = lineDiscounts.reduce((a, b) => a + b, 0) + makingDiscounts;
+        const base = subtotal + makingDiscounts;
+        const tenant = await tx.tenant.findUniqueOrThrow({ where: { id: user.tenantId } });
+        const cap = applyBps(base, tenant.opsMaxDiscountBps);
+        if (totalDiscount > cap) {
+          throw new ForbiddenException(
+            `discount ₹${(totalDiscount / 100).toFixed(2)} exceeds your limit of ` +
+              `${(tenant.opsMaxDiscountBps / 100).toFixed(2)}% (₹${(cap / 100).toFixed(2)}) — ask an admin`,
+          );
+        }
+      }
 
       // ---------- GST (pure domain engine) ----------
+      // Extra charges (hallmark/packing/other) are ancillary services — they
+      // ride the making/service component through the engine.
       const gstLines: GstLineInput[] = priced.map((p, i) => ({
         lineNo: p.lineNo,
         metalValuePaise: p.pricing.metalValuePaise,
         stoneValuePaise: p.pricing.stoneValuePaise,
-        makingPaise: p.pricing.makingPaise,
+        makingPaise: p.pricing.makingPaise + p.pricing.extraChargesPaise,
         lineDiscountPaise: lineDiscounts[i]!,
         isStudded: p.isStudded,
         isPrecious: p.isPrecious,
@@ -234,6 +289,7 @@ export class DocumentsService {
               metalValuePaise: BigInt(p.pricing.metalValuePaise),
               stoneValuePaise: BigInt(p.pricing.stoneValuePaise),
               makingPaise: BigInt(p.pricing.makingPaise),
+              extraChargesPaise: BigInt(p.pricing.extraChargesPaise),
               makingDiscountPaise: BigInt(p.pricing.makingDiscountAppliedPaise),
               lineDiscountPaise: BigInt(lineDiscounts[i]!),
               grossPaise: BigInt(p.pricing.grossPaise - lineDiscounts[i]!),
@@ -354,7 +410,7 @@ export class DocumentsService {
       for (const line of est.lines) {
         if (!line.itemId) throw new BadRequestException(`line ${line.lineNo} has no item — cannot convert`);
         const item = await tx.item.findUniqueOrThrow({ where: { id: line.itemId } });
-        if (item.status !== ItemStatus.IN_STOCK) {
+        if (!SELLABLE.has(item.status)) {
           throw new BadRequestException(`item ${item.itemCode} is no longer in stock (${item.status})`);
         }
         if (item.branchId !== est.branchId) {
@@ -364,7 +420,7 @@ export class DocumentsService {
           lineNo: line.lineNo,
           metalValuePaise: Number(line.metalValuePaise),
           stoneValuePaise: Number(line.stoneValuePaise),
-          makingPaise: Number(line.makingPaise),
+          makingPaise: Number(line.makingPaise) + Number(line.extraChargesPaise),
           lineDiscountPaise: Number(line.lineDiscountPaise),
           isStudded: item.isStudded,
           isPrecious: item.isPrecious,
@@ -418,6 +474,7 @@ export class DocumentsService {
               metalValuePaise: l.metalValuePaise,
               stoneValuePaise: l.stoneValuePaise,
               makingPaise: l.makingPaise,
+              extraChargesPaise: l.extraChargesPaise,
               makingDiscountPaise: l.makingDiscountPaise,
               lineDiscountPaise: l.lineDiscountPaise,
               grossPaise: l.grossPaise,

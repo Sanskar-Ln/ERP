@@ -69,6 +69,31 @@ describe('priceItem', () => {
     expect(p.stoneValuePaise).toBe(5_250_000);
   });
 
+  it('extra charges (hallmark/packing/other) add to gross and are reported', () => {
+    const p = priceItem({
+      pieces: 1,
+      metalComponents: [{ netWeightMg: 10_000, wastageBps: 0, ratePaisePer10g: GOLD_22K_RATE }],
+      stoneValuesPaise: [],
+      making: { type: MakingChargeType.FLAT, value: 100_000 },
+      makingDiscountPaise: 0,
+      extraChargesPaise: 4_500 + 2_000 + 1_000, // hallmark ₹45 + packing ₹20 + other ₹10
+    });
+    expect(p.extraChargesPaise).toBe(7_500);
+    expect(p.grossPaise).toBe(9_200_000 + 100_000 + 7_500);
+    // making discount never eats into extra charges
+    const q = priceItem({
+      pieces: 1,
+      metalComponents: [],
+      stoneValuesPaise: [],
+      making: { type: MakingChargeType.FLAT, value: 10_000 },
+      makingDiscountPaise: 99_999,
+      extraChargesPaise: 7_500,
+    });
+    expect(q.makingPaise).toBe(0);
+    expect(q.grossPaise).toBe(7_500);
+    expect(() => priceItem({ ...q, pieces: 1, metalComponents: [], stoneValuesPaise: [], making: { type: MakingChargeType.FLAT, value: 0 }, makingDiscountPaise: 0, extraChargesPaise: -1 })).toThrow(RangeError);
+  });
+
   it('old-gold valuation: 9.4 g net at ₹88,000/10g', () => {
     expect(oldGoldValuePaise(9_400, 8_800_000)).toBe(8_272_000);
   });

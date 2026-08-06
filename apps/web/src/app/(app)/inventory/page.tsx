@@ -23,12 +23,16 @@ interface Item {
   id: string;
   itemCode: string;
   name: string;
+  category: string | null;
   status: string;
   pieces: number;
   isStudded: boolean;
   metalComponents: { grossWeightG: string; netWeightG: string; wastageBps: number }[];
   stoneComponents: { weightCt: string; valuePaise: number }[];
 }
+
+/** Common jewellery categories offered as datalist suggestions (free text wins). */
+const CATEGORY_SUGGESTIONS = ['Ring', 'Chain', 'Necklace', 'Bangle', 'Bracelet', 'Earring', 'Pendant', 'Mangalsutra', 'Nose Pin', 'Anklet', 'Coin'];
 interface Movement {
   id: string;
   movementType: string;
@@ -47,9 +51,19 @@ export default function InventoryPage() {
   const [msg, setMsg] = useState('');
 
   // form state (one metal component keeps the MVP form manageable)
-  const [f, setF] = useState({ itemCode: '', name: '', purityId: '', hsnCodeId: '', gross: '', net: '', wastage: '0', makingPerGram: '450', studded: false });
+  const [f, setF] = useState({ itemCode: '', name: '', category: '', purityId: '', hsnCodeId: '', gross: '', net: '', wastage: '0', makingPerGram: '450', hallmark: '45', packing: '0', studded: false });
 
   const load = () => void api<Item[]>('GET', '/items').then(setItems);
+
+  /** Hold / release a piece for a customer — status flip, stock stays on hand. */
+  async function toggleReserve(it: Item) {
+    try {
+      await api('POST', `/items/${it.id}/${it.status === 'RESERVED' ? 'release' : 'reserve'}`, {});
+      load();
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : 'failed');
+    }
+  }
   useEffect(() => {
     load();
     void api<Metal[]>('GET', '/metals').then(setMetals);
@@ -65,12 +79,15 @@ export default function InventoryPage() {
       await api('POST', '/items', {
         itemCode: f.itemCode.toUpperCase(),
         name: f.name,
+        category: f.category || undefined,
         branchId: user.branchId,
         hsnCodeId: f.hsnCodeId,
         pieces: 1,
         metalComponents: [{ metalId: metal.id, purityId: f.purityId, grossWeightG: f.gross, netWeightG: f.net, wastageBps: Math.round(Number(f.wastage) * 100) }],
         stoneComponents: [],
         makingCharge: { type: 'PER_GRAM', value: Math.round(Number(f.makingPerGram) * 100) },
+        hallmarkChargePaise: Math.round(Number(f.hallmark || '0') * 100),
+        packingChargePaise: Math.round(Number(f.packing || '0') * 100),
         isStudded: f.studded,
         isPrecious: true,
       });
@@ -93,6 +110,10 @@ export default function InventoryPage() {
         <form onSubmit={createItem} className="grid grid-cols-2 gap-2 md:grid-cols-4">
           <input className="input" placeholder="ITEM-CODE" value={f.itemCode} onChange={(e) => setF({ ...f, itemCode: e.target.value })} />
           <input className="input" placeholder="name" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+          <input className="input" placeholder="category (Ring, Chain…)" list="cat-suggestions" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} />
+          <datalist id="cat-suggestions">
+            {CATEGORY_SUGGESTIONS.map((c) => <option key={c} value={c} />)}
+          </datalist>
           <select className="input" value={f.purityId} onChange={(e) => setF({ ...f, purityId: e.target.value })}>
             <option value="">purity…</option>
             {metals.flatMap((m) => m.purities.map((p) => (
@@ -109,6 +130,8 @@ export default function InventoryPage() {
           <input className="input" placeholder="net g" value={f.net} onChange={(e) => setF({ ...f, net: e.target.value })} />
           <input className="input" placeholder="wastage %" value={f.wastage} onChange={(e) => setF({ ...f, wastage: e.target.value })} />
           <input className="input" placeholder="making ₹/g" value={f.makingPerGram} onChange={(e) => setF({ ...f, makingPerGram: e.target.value })} />
+          <input className="input" placeholder="hallmark ₹" title="flat hallmarking charge" value={f.hallmark} onChange={(e) => setF({ ...f, hallmark: e.target.value })} />
+          <input className="input" placeholder="packing ₹" title="flat packing charge" value={f.packing} onChange={(e) => setF({ ...f, packing: e.target.value })} />
           <label className="col-span-2 flex items-center gap-2 text-sm">
             <input type="checkbox" checked={f.studded} onChange={(e) => setF({ ...f, studded: e.target.checked })} />
             studded (composite 3% GST)
@@ -136,6 +159,7 @@ export default function InventoryPage() {
                   right={`${it.metalComponents.reduce((s, c) => s + Number(c.grossWeightG), 0).toFixed(3)} g`}
                   meta={
                     <>
+                      {it.category ? `${it.category} · ` : ''}
                       {it.pieces} pc
                       {it.stoneComponents.length
                         ? ` · ${it.stoneComponents.length} stones (${inr(it.stoneComponents.reduce((s, c) => s + c.valuePaise, 0))})`
@@ -143,18 +167,25 @@ export default function InventoryPage() {
                     </>
                   }
                   actions={
-                    <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
-                      ledger
-                    </button>
+                    <>
+                      <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
+                        ledger
+                      </button>
+                      {(it.status === 'IN_STOCK' || it.status === 'RESERVED') && (
+                        <button className="btn-secondary btn-xs" onClick={() => void toggleReserve(it)}>
+                          {it.status === 'RESERVED' ? 'release' : 'reserve'}
+                        </button>
+                      )}
+                    </>
                   }
                 />
               ))}
             </div>
             {/* desktop: dense table */}
-            <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[480px]">
+            <div className="hidden overflow-x-auto sm:block"><table className="w-full min-w-[560px]">
               <thead>
                 <tr>
-                  <th className="th">Code</th><th className="th">Name</th><th className="th">Status</th>
+                  <th className="th">Code</th><th className="th">Name</th><th className="th">Category</th><th className="th">Status</th>
                   <th className="th">Pieces</th><th className="th">Gross g</th><th className="th">Stones</th><th className="th"></th>
                 </tr>
               </thead>
@@ -163,14 +194,22 @@ export default function InventoryPage() {
                   <tr key={it.id}>
                     <td className="td font-mono text-xs">{it.itemCode}</td>
                     <td className="td">{it.name}</td>
+                    <td className="td text-neutral-500">{it.category ?? '—'}</td>
                     <td className="td"><Badge status={it.status} /></td>
                     <td className="td">{it.pieces}</td>
                     <td className="td">{it.metalComponents.reduce((s, c) => s + Number(c.grossWeightG), 0).toFixed(3)}</td>
                     <td className="td">{it.stoneComponents.length ? `${it.stoneComponents.length} (${inr(it.stoneComponents.reduce((s, c) => s + c.valuePaise, 0))})` : '—'}</td>
                     <td className="td">
-                      <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
-                        ledger
-                      </button>
+                      <div className="flex gap-1">
+                        <button className="btn-secondary btn-xs" onClick={() => void api<Movement[]>('GET', `/stock-movements?itemId=${it.id}`).then(setMoves)}>
+                          ledger
+                        </button>
+                        {(it.status === 'IN_STOCK' || it.status === 'RESERVED') && (
+                          <button className="btn-secondary btn-xs" onClick={() => void toggleReserve(it)}>
+                            {it.status === 'RESERVED' ? 'release' : 'reserve'}
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

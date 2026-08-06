@@ -80,7 +80,13 @@ export const shadow = {
 /** Status → tone mapping, mirrored from the web Badge component. */
 export const statusTone: Record<string, { fg: string; bg: string }> = {
   IN_STOCK: { fg: color.good, bg: color.goodBg },
+  RESERVED: { fg: color.warn, bg: color.warnBg },
   SOLD: { fg: color.info, bg: color.infoBg },
+  // payment settlement (derived server-side)
+  UNPAID: { fg: color.danger, bg: color.dangerBg },
+  PARTIALLY_PAID: { fg: color.warn, bg: color.warnBg },
+  PAID: { fg: color.good, bg: color.goodBg },
+  REFUNDED: { fg: color.neutral, bg: color.neutralBg },
   IN_TRANSIT: { fg: color.warn, bg: color.warnBg },
   WITH_KARIGAR: { fg: color.warn, bg: color.warnBg },
   SCRAPPED: { fg: color.neutral, bg: color.neutralBg },

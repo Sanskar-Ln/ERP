@@ -189,6 +189,30 @@ the full milestone list and ARCHITECTURE.md for the system map.
   all 6 pages, card↔table swap, tap-through, skeleton appear/resolve),
   web build, 86 tests, 4 typechecks, mobile production Metro bundle.
 
+- **Post-MVP: Phase A — money completeness (payments, charges, discounts,
+  customer rates, reservations)** — (1) **Payments**: append-only Payment
+  ledger against documents (CASH/UPI/CARD/BANK_TRANSFER/OTHER; PAYMENT +
+  REFUND rows), settlement status DERIVED by a pure domain summariser
+  (9 tests: partial→PAID→refund transitions, overpay/refund guards);
+  endpoints on /documents/:id/payments (refunds ADMIN-only), summary on
+  every list/detail; web payment strip + record form; mobile manager
+  payment chips. (2) **Extra charges**: hallmark/packing/other flat
+  charges on items, priced into the line (making/service GST path),
+  frozen in DocumentLine.extraChargesPaise + snapshot; BIS hallmark
+  metadata. (3) **Discounts**: flat/percent at cart AND line level with
+  largest-remainder proration; OPS capped by tenant `opsMaxDiscountBps`
+  (default 2%, ADMIN-editable /settings; enforced 403 in the engine).
+  (4) **Customer-specific rates**: signed bps adjust on the board rate
+  (ADMIN PATCH /customers/:id/rate), applied at pricing, board + adjusted
+  rate both snapshotted. (5) **Categories + RESERVED**: item category/
+  sub-category (+ filter), RESERVE/UNRESERVE zero-quantity ledger
+  annotations (movement-rules enforce zero qty), reserve/release
+  endpoints + web buttons, RESERVED items sellable, stock summary
+  unaffected. Verified: 27-check API smoke + 27-check Playwright sweep
+  (payment recorded in-browser, reserve→release, editors present, zero
+  overflow both roles/widths), 97 unit tests, 4 typechecks, mobile
+  bundle.
+
 ## In progress
 
 Nothing — **the MVP scope is complete and pushed.**

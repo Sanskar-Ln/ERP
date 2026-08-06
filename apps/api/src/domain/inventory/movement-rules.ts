@@ -22,6 +22,11 @@ const SIGNS: Record<MovementType, 1 | -1 | 0> = {
   EXCHANGE_IN: 1,
   KARIGAR_ISSUE: -1,
   KARIGAR_RECEIPT: 1,
+  // Reservations are ANNOTATIONS, not stock changes: a reserved piece is
+  // still on hand, so both rows post with ZERO quantities (enforced below)
+  // and only flip the item status. The ledger keeps the who/when trail.
+  RESERVE: 0,
+  UNRESERVE: 0,
   REVERSAL: 0, // quantities are copied negated from the original
 };
 
@@ -41,6 +46,13 @@ export function signedQuantities(
 ): { pieces: number; grossWeightMg: number } {
   if (!Number.isSafeInteger(pieces)) throw new RangeError(`pieces must be an integer, got ${pieces}`);
   if (!Number.isSafeInteger(grossWeightMg)) throw new RangeError(`grossWeightMg must be an integer, got ${grossWeightMg}`);
+  if (type === MovementType.RESERVE || type === MovementType.UNRESERVE) {
+    // Reservation rows never move stock — a reserved piece is still on hand.
+    if (pieces !== 0 || grossWeightMg !== 0) {
+      throw new RangeError(`${type} movements must post zero quantities (they only annotate)`);
+    }
+    return { pieces: 0, grossWeightMg: 0 };
+  }
   const sign = signForMovement(type);
   if (sign === 0) return { pieces, grossWeightMg }; // ADJUSTMENT / REVERSAL: as posted
   const abs = (n: number) => Math.abs(n);

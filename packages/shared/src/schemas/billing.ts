@@ -10,8 +10,20 @@
  * documents.
  */
 import { z } from 'zod';
-import { DocStatus, DocType } from '../enums';
-import { zDateTime, zGrams, zGstStateCode, zId, zPaise } from './common';
+import { DiscountType, DocStatus, DocType, PaymentKind, PaymentMode } from '../enums';
+import { zBps, zDateTime, zGrams, zGstStateCode, zId, zPaise } from './common';
+
+/**
+ * A discount quoted either as flat paise or as percent (basis points, so
+ * 250 = 2.5%). Percent discounts resolve against the value they apply to
+ * server-side — the wire never carries a computed amount for PERCENT.
+ */
+export const zDiscountSpec = z.object({
+  type: z.nativeEnum(DiscountType),
+  /** FLAT: paise; PERCENT: basis points (250 = 2.5%) */
+  value: z.number().int().safe().nonnegative(),
+});
+export type DiscountSpec = z.infer<typeof zDiscountSpec>;
 
 /**
  * A cart line referencing a tagged inventory item. Pricing inputs that vary
@@ -23,6 +35,8 @@ export const zCartLine = z.object({
   pieces: z.number().int().min(1).default(1),
   /** optional negotiated discount on making charges, paise */
   makingDiscountPaise: zPaise.default(0),
+  /** optional line-level discount on the line's gross value (flat or percent) */
+  discount: zDiscountSpec.optional(),
   /** optional per-line metal rate override (paise per 10g) — else board rate */
   metalRatePaisePer10gOverride: zPaise.optional(),
 });
@@ -53,6 +67,12 @@ export const zCart = z.object({
   oldGoldExchanges: z.array(zOldGoldExchange).default([]),
   /** overall discount applied before tax, prorated across lines, paise */
   cartDiscountPaise: zPaise.default(0),
+  /**
+   * Cart discount quoted flat OR percent — resolved server-side against the
+   * cart subtotal and prorated like cartDiscountPaise (which it supersedes
+   * when present). RBAC: OPS discounts are capped per tenant; ADMIN is not.
+   */
+  discount: zDiscountSpec.optional(),
   /** place-of-supply state code; defaults to customer's state server-side */
   placeOfSupplyStateCode: zGstStateCode.optional(),
   note: z.string().max(500).optional(),
@@ -79,6 +99,30 @@ export const zCancelDocument = z.object({
 export type CancelDocument = z.infer<typeof zCancelDocument>;
 
 export const zDocStatus = z.nativeEnum(DocStatus);
+
+/**
+ * Record money received (or returned) against a document.
+ * IMMUTABILITY RULE: payment rows are append-only — a mistake is corrected
+ * by a REFUND row, never by editing. Settlement status is always derived.
+ */
+export const zRecordPayment = z.object({
+  kind: z.nativeEnum(PaymentKind).default('PAYMENT'),
+  mode: z.nativeEnum(PaymentMode),
+  amountPaise: zPaise.refine((v) => v > 0, 'amount must be positive'),
+  /** UTR / txn id / cheque no — whatever identifies the transfer */
+  reference: z.string().max(120).optional(),
+  note: z.string().max(300).optional(),
+  /** defaults to now server-side */
+  paidAt: zDateTime.optional(),
+});
+export type RecordPayment = z.infer<typeof zRecordPayment>;
+
+/** Tenant-level billing settings (ADMIN-editable). */
+export const zUpdateBillingSettings = z.object({
+  /** max total discount an OPS user may give, in bps of subtotal (200 = 2%) */
+  opsMaxDiscountBps: zBps.max(10_000),
+});
+export type UpdateBillingSettings = z.infer<typeof zUpdateBillingSettings>;
 
 /** Tax line as returned on a document (one row per rate bucket per kind). */
 export const zTaxLineOut = z.object({

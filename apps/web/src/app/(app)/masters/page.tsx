@@ -32,6 +32,43 @@ interface Customer {
   gstin: string | null;
 }
 
+/**
+ * OPS discount cap (% of the bill). Enforced by the document engine
+ * server-side; this only configures the tenant knob. ADMIN page, so no
+ * further gating needed here.
+ */
+function OpsDiscountCap() {
+  const [pct, setPct] = useState('');
+  const [msg, setMsg] = useState('');
+  useEffect(() => {
+    void api<{ opsMaxDiscountBps: number }>('GET', '/settings').then((s) => setPct((s.opsMaxDiscountBps / 100).toString()));
+  }, []);
+  async function save() {
+    setMsg('');
+    try {
+      const s = await api<{ opsMaxDiscountBps: number }>('PATCH', '/settings', {
+        opsMaxDiscountBps: Math.round(Number(pct) * 100),
+      });
+      setPct((s.opsMaxDiscountBps / 100).toString());
+      setMsg('saved');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'failed');
+    }
+  }
+  return (
+    <div className="mt-4 border-t border-stone-100 pt-4">
+      <h3 className="mb-2 text-sm font-medium">OPS discount limit</h3>
+      <div className="flex flex-wrap items-center gap-2">
+        <input className="input w-24" value={pct} onChange={(e) => setPct(e.target.value)} />
+        <span className="text-sm text-stone-500">% of the bill</span>
+        <button className="btn-secondary btn-xs" onClick={() => void save()}>Save</button>
+        {msg && <span className="text-xs text-amber-700">{msg}</span>}
+      </div>
+      <p className="hint mt-1">Counter staff (OPS) can discount up to this; admins are unrestricted.</p>
+    </div>
+  );
+}
+
 export default function MastersPage() {
   const [metals, setMetals] = useState<Metal[]>([]);
   const [rules, setRules] = useState<TaxRule[]>([]);
@@ -81,6 +118,8 @@ export default function MastersPage() {
           ))}
 
           <p className="hint mt-3">Daily board-rate fixing lives on the Dashboard (both roles).</p>
+
+          <OpsDiscountCap />
         </section>
 
         <section className="card">

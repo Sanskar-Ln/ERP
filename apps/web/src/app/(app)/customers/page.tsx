@@ -11,7 +11,7 @@
  * Files are JWT-protected, so viewing fetches a blob and opens it.
  */
 import { useCallback, useEffect, useState } from 'react';
-import { api, apiBlob, API_URL, inr, session } from '@/lib/api';
+import { api, apiBlob, API_URL, inr, isAdmin, session } from '@/lib/api';
 import { Badge, EmptyState, MobileListCard, PageHeader, SkeletonRows } from '@/components/ui';
 
 interface Customer {
@@ -23,7 +23,46 @@ interface Customer {
   gstin: string | null;
   pan: string | null;
   kycDocs: { docType: string; docNumber: string }[];
+  rateAdjustBps: number;
   createdAt: string;
+}
+
+/**
+ * Customer-specific board-rate adjustment (ADMIN): signed % on the board
+ * rate — negative = concession for a loyal customer. Applied automatically
+ * to every future bill of this customer; enforced server-side.
+ */
+function RateAdjustEditor({ customer, onSaved }: { customer: Customer; onSaved: (c: Customer) => void }) {
+  const [pct, setPct] = useState((customer.rateAdjustBps / 100).toString());
+  const [msg, setMsg] = useState('');
+  if (!isAdmin()) {
+    return customer.rateAdjustBps !== 0 ? (
+      <p className="mt-2 text-xs text-gold-700">
+        customer rate: board {customer.rateAdjustBps > 0 ? '+' : ''}{(customer.rateAdjustBps / 100).toFixed(2)}%
+      </p>
+    ) : null;
+  }
+  async function save() {
+    setMsg('');
+    try {
+      const updated = await api<Customer>('PATCH', `/customers/${customer.id}/rate`, {
+        rateAdjustBps: Math.round(Number(pct) * 100),
+      });
+      onSaved(updated);
+      setMsg('saved');
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : 'failed');
+    }
+  }
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-stone-100 pt-3">
+      <span className="text-xs text-stone-500">Customer rate vs board (%)</span>
+      <input className="input w-24" value={pct} onChange={(e) => setPct(e.target.value)} placeholder="-1.0" />
+      <button className="btn-secondary btn-xs" onClick={() => void save()}>Save</button>
+      <span className="hint">negative = concession, e.g. −1 bills gold 1% under board</span>
+      {msg && <span className="text-xs text-amber-700">{msg}</span>}
+    </div>
+  );
 }
 interface Doc {
   id: string;
@@ -189,6 +228,7 @@ export default function CustomersPage() {
                   KYC: {selected.kycDocs.map((k) => `${k.docType} ${k.docNumber}`).join(', ')}
                 </p>
               )}
+              <RateAdjustEditor key={selected.id} customer={selected} onSaved={setSelected} />
             </section>
 
             <section className="card">

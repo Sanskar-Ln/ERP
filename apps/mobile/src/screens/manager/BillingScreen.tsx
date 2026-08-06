@@ -31,13 +31,21 @@ interface Doc {
   status: string;
   grandTotalPaise: number;
 }
+interface PaymentSummary {
+  netPaidPaise: number;
+  duePaise: number;
+  status: string;
+}
 interface DocDetail extends Doc {
   taxableValuePaise: number;
   exchangeValuePaise: number;
   totalTaxPaise: number;
   taxLines: { label: string; taxPaise: number }[];
   lines: { lineNo: number; description: string; grossPaise: number }[];
+  paymentSummary?: PaymentSummary;
 }
+
+const PAYMENT_MODES = ['CASH', 'UPI', 'CARD', 'BANK_TRANSFER', 'OTHER'] as const;
 
 export default function BillingScreen(): React.JSX.Element {
   const [phone, setPhone] = useState('');
@@ -148,6 +156,27 @@ export default function BillingScreen(): React.JSX.Element {
   const canConvert = detail?.docType === 'ESTIMATE' && detail.status === 'ISSUED';
   const canCancel = detail?.status === 'ISSUED' && session.isAdmin();
 
+  // ---- settlement (append-only ledger; status derived server-side) ----
+  const [payMode, setPayMode] = useState<string>('CASH');
+  const [payAmount, setPayAmount] = useState('');
+
+  async function recordPayment(): Promise<void> {
+    if (!detail || !payAmount) return;
+    setMsg('');
+    try {
+      await api('POST', `/documents/${detail.id}/payments`, {
+        kind: 'PAYMENT',
+        mode: payMode,
+        amountPaise: Math.round(Number(payAmount) * 100),
+      });
+      setPayAmount('');
+      setDetail(await api<DocDetail>('GET', `/documents/${detail.id}`));
+      note('success', 'payment recorded');
+    } catch (e) {
+      note('error', e instanceof Error ? e.message : 'failed');
+    }
+  }
+
   return (
     <ScrollView
       contentContainerStyle={styles.wrap}
@@ -228,6 +257,37 @@ export default function BillingScreen(): React.JSX.Element {
             </Text>
           ))}
           <Text style={styles.total}>{inr(detail.grandTotalPaise)}</Text>
+          {detail.paymentSummary && (
+            <View style={styles.payBlock}>
+              <View style={styles.detailHead}>
+                <Badge status={detail.paymentSummary.status} />
+                <Text style={styles.meta}>
+                  paid {inr(detail.paymentSummary.netPaidPaise)} · due {inr(detail.paymentSummary.duePaise)}
+                </Text>
+              </View>
+              {detail.status !== 'CANCELLED' && detail.paymentSummary.duePaise > 0 && (
+                <>
+                  <View style={styles.row}>
+                    {PAYMENT_MODES.map((m) => (
+                      <Pressable key={m} onPress={() => setPayMode(m)}>
+                        <Text style={[styles.modeChip, payMode === m && styles.modeChipOn]}>{m.replaceAll('_', ' ')}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  <View style={styles.row}>
+                    <Field
+                      style={{ flex: 1 }}
+                      placeholder="₹ amount"
+                      keyboardType="numeric"
+                      value={payAmount}
+                      onChangeText={setPayAmount}
+                    />
+                    <Btn title="Record payment" onPress={() => void recordPayment()} disabled={!payAmount} />
+                  </View>
+                </>
+              )}
+            </View>
+          )}
           <View style={styles.row}>
             {canConvert && (
               <View style={{ flex: 1 }}>
@@ -276,4 +336,16 @@ const styles = StyleSheet.create({
   total: { fontFamily: font.bold, fontSize: 26, color: color.gold900, letterSpacing: -0.5 },
   docCard: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   docTotal: { fontFamily: font.semibold, fontSize: 15, color: color.ink },
+  payBlock: { gap: 8, borderTopWidth: 1, borderTopColor: color.gold200, paddingTop: 10 },
+  modeChip: {
+    fontFamily: font.medium,
+    fontSize: 11.5,
+    color: color.inkSecondary,
+    backgroundColor: color.neutralBg,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  modeChipOn: { color: '#fff', backgroundColor: color.gold600 },
 });

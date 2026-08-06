@@ -114,6 +114,17 @@ export const zCreateCustomer = z.object({
 });
 export type CreateCustomer = z.infer<typeof zCreateCustomer>;
 
+/**
+ * Customer-specific rate adjustment on the board metal rate, in SIGNED
+ * basis points: −100 = 1% below board (a loyal-customer concession),
+ * +50 = 0.5% premium. Applied server-side at pricing time; the effective
+ * rate is snapshotted on the document line. ADMIN-only to change.
+ */
+export const zUpdateCustomerRate = z.object({
+  rateAdjustBps: z.number().int().min(-2_000).max(2_000),
+});
+export type UpdateCustomerRate = z.infer<typeof zUpdateCustomerRate>;
+
 export const zCreateSupplier = z.object({
   name: z.string().min(1).max(120),
   phone: z.string().regex(/^\+?\d{10,13}$/).optional(),

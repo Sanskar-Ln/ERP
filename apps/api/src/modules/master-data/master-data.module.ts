@@ -9,8 +9,9 @@ import { CatalogController } from './catalog';
 import { TaxRulesController } from './tax-rules';
 import { PartiesController } from './parties';
 import { RatesController } from './rates';
+import { SettingsController } from './settings';
 
 @Module({
-  controllers: [CatalogController, TaxRulesController, PartiesController, RatesController],
+  controllers: [CatalogController, TaxRulesController, PartiesController, RatesController, SettingsController],
 })
 export class MasterDataModule {}

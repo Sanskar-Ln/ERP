@@ -30,6 +30,14 @@ describe('movement sign rules', () => {
     expect(original.grossWeightMg + rev.grossWeightMg).toBe(0);
   });
 
+  it('RESERVE/UNRESERVE are zero-quantity annotations — stock stays on hand', () => {
+    expect(signedQuantities(MovementType.RESERVE, 0, 0)).toEqual({ pieces: 0, grossWeightMg: 0 });
+    expect(signedQuantities(MovementType.UNRESERVE, 0, 0)).toEqual({ pieces: 0, grossWeightMg: 0 });
+    // posting real quantities on a reservation row is a bug, not a movement
+    expect(() => signedQuantities(MovementType.RESERVE, 1, 0)).toThrow(RangeError);
+    expect(() => signedQuantities(MovementType.UNRESERVE, 0, 500)).toThrow(RangeError);
+  });
+
   it('rejects non-integer quantities (float leak guard)', () => {
     expect(() => signedQuantities(MovementType.PURCHASE_IN, 1.5, 0)).toThrow(RangeError);
     expect(() => signedQuantities(MovementType.PURCHASE_IN, 1, 10.5)).toThrow(RangeError);

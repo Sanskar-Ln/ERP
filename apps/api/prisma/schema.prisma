@@ -78,6 +78,8 @@ enum MovementType {
   EXCHANGE_IN
   KARIGAR_ISSUE
   KARIGAR_RECEIPT
+  RESERVE
+  UNRESERVE
   REVERSAL
 }
 
@@ -112,10 +114,24 @@ enum TransferStatus {
 
 enum ItemStatus {
   IN_STOCK
+  RESERVED
   SOLD
   IN_TRANSIT
   WITH_KARIGAR
   SCRAPPED
+}
+
+enum PaymentMode {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+  OTHER
+}
+
+enum PaymentKind {
+  PAYMENT
+  REFUND
 }
 
 // ------------------------------------------------------------- platform
@@ -125,6 +141,8 @@ model Tenant {
   name      String
   gstin     String?
   stateCode String // 2-digit GST state code of the registered office
+  /** max total discount an OPS user may give, bps of subtotal (200 = 2%); ADMIN unrestricted */
+  opsMaxDiscountBps Int @default(200)
   createdAt DateTime @default(now())
 
   branches Branch[]
@@ -264,6 +282,8 @@ model Customer {
   gstin       String?
   pan         String?
   kycDocs     Json    @default("[]") // [{docType, docNumber}] — see zKycDoc
+  /** customer-specific rate adjustment on the board rate, SIGNED bps (−100 = 1% concession) */
+  rateAdjustBps Int   @default(0)
   createdAt   DateTime @default(now())
 
   paperBills PaperBill[]
@@ -350,6 +370,8 @@ model Item {
   itemCode          String // stable code — THIS is what barcodes encode
   name              String
   description       String?
+  category          String? // e.g. "Ring", "Chain" — free-text classification
+  subCategory       String?
   branchId          String
   lotId             String?
   lot               Lot?             @relation(fields: [lotId], references: [id])
@@ -357,6 +379,13 @@ model Item {
   pieces            Int              @default(1)
   makingChargeType  MakingChargeType
   makingChargeValue BigInt // FLAT: paise/pc, PER_GRAM: paise/g, PERCENT: bps
+  // flat per-piece charges that ride the making/service GST path at sale
+  hallmarkChargePaise BigInt @default(0)
+  packingChargePaise  BigInt @default(0)
+  otherChargePaise    BigInt @default(0)
+  // BIS hallmark metadata (informational; the charge above is what bills)
+  hallmarkNo        String?
+  hallmarkAgency    String?
   isStudded         Boolean          @default(false) // → composite 3% GST path
   isPrecious        Boolean          @default(true) // false → imitation (18%)
   status            ItemStatus       @default(IN_STOCK)
@@ -555,10 +584,33 @@ model Document {
   lines     DocumentLine[]
   taxLines  DocumentTaxLine[]
   exchanges OldGoldExchange[]
+  payments  Payment[]
 
   @@unique([tenantId, docType, docNumber])
   @@index([tenantId, customerId, issuedAt])
   @@index([tenantId, docType, issuedAt])
+}
+
+// Money received (or returned) against a document. APPEND-ONLY: rows are
+// never updated or deleted — a wrong payment is corrected by a REFUND row.
+// Settlement status (UNPAID/PARTIALLY_PAID/PAID/REFUNDED) is always DERIVED
+// from the rows + the document's grand total, never stored.
+model Payment {
+  id              String      @id
+  tenantId        String
+  documentId      String
+  document        Document    @relation(fields: [documentId], references: [id])
+  kind            PaymentKind @default(PAYMENT)
+  mode            PaymentMode
+  amountPaise     BigInt // always positive; kind carries the direction
+  reference       String? // UTR / txn id / cheque number
+  note            String?
+  paidAt          DateTime    @default(now())
+  createdByUserId String?
+  createdAt       DateTime    @default(now())
+
+  @@index([tenantId, documentId])
+  @@index([tenantId, paidAt])
 }
 
 // One sold line. `snapshot` freezes every pricing input (weights, rates,
@@ -577,9 +629,10 @@ model DocumentLine {
   metalValuePaise     BigInt
   stoneValuePaise     BigInt
   makingPaise         BigInt
+  extraChargesPaise   BigInt   @default(0) // hallmark + packing + other, frozen at issue
   makingDiscountPaise BigInt
-  lineDiscountPaise   BigInt // prorated share of cart discount
-  grossPaise          BigInt // metal + stone + making − discounts
+  lineDiscountPaise   BigInt // prorated cart discount + line's own discount
+  grossPaise          BigInt // metal + stone + making + extra charges − discounts
   taxablePaise        BigInt
   snapshot            Json?
 

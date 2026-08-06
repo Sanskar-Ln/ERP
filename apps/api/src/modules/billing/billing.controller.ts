@@ -26,6 +26,7 @@ import { CurrentUser, Roles } from '../../platform/auth/auth.decorators';
 import { TenancyService } from '../../platform/tenancy/tenancy.service';
 import { ZodPipe } from '../../platform/validation/zod.pipe';
 import { ApiZodBody } from '../../platform/validation/openapi';
+import { summarizePayments } from '../../domain/payments/payment-status';
 import { DocumentsService } from './documents.service';
 
 const zDocQuery = z.object({
@@ -49,20 +50,41 @@ export class BillingController {
   }
 
   @Get()
-  list(@CurrentUser() user: JwtClaims, @Query(new ZodPipe(zDocQuery)) q: z.infer<typeof zDocQuery>) {
-    return this.tenancy.client(user.tenantId).document.findMany({
+  async list(@CurrentUser() user: JwtClaims, @Query(new ZodPipe(zDocQuery)) q: z.infer<typeof zDocQuery>) {
+    const docs = await this.tenancy.client(user.tenantId).document.findMany({
       where: { docType: q.docType, customerId: q.customerId },
       orderBy: { issuedAt: 'desc' },
       take: 100,
+      include: { payments: { select: { kind: true, amountPaise: true } } },
     });
+    // Attach the DERIVED settlement summary; strip the raw rows from the list.
+    return docs.map(({ payments, ...doc }) => ({
+      ...doc,
+      paymentSummary: summarizePayments(
+        Number(doc.grandTotalPaise),
+        payments.map((p) => ({ kind: p.kind as never, amountPaise: Number(p.amountPaise) })),
+      ),
+    }));
   }
 
   @Get(':id')
-  get(@CurrentUser() user: JwtClaims, @Param('id', new ZodPipe(zId)) id: string) {
-    return this.tenancy.client(user.tenantId).document.findUniqueOrThrow({
+  async get(@CurrentUser() user: JwtClaims, @Param('id', new ZodPipe(zId)) id: string) {
+    const doc = await this.tenancy.client(user.tenantId).document.findUniqueOrThrow({
       where: { id },
-      include: { lines: { orderBy: { lineNo: 'asc' } }, taxLines: true, exchanges: true },
+      include: {
+        lines: { orderBy: { lineNo: 'asc' } },
+        taxLines: true,
+        exchanges: true,
+        payments: { orderBy: { paidAt: 'asc' } },
+      },
     });
+    return {
+      ...doc,
+      paymentSummary: summarizePayments(
+        Number(doc.grandTotalPaise),
+        doc.payments.map((p) => ({ kind: p.kind as never, amountPaise: Number(p.amountPaise) })),
+      ),
+    };
   }
 
   @Post(':id/convert')

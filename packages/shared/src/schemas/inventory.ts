@@ -54,6 +54,9 @@ export const zCreateItem = z.object({
   itemCode: z.string().min(3).max(40).regex(/^[A-Z0-9-]+$/),
   name: z.string().min(1).max(160),
   description: z.string().max(500).optional(),
+  /** product classification, e.g. "Ring" / "Chain" (free text, filterable) */
+  category: z.string().max(60).optional(),
+  subCategory: z.string().max(60).optional(),
   branchId: zId,
   lotId: zId.nullable().optional(),
   hsnCodeId: zId,
@@ -61,6 +64,15 @@ export const zCreateItem = z.object({
   metalComponents: z.array(zItemMetalComponent).min(0),
   stoneComponents: z.array(zItemStoneComponent).min(0),
   makingCharge: zMakingCharge,
+  /** flat hallmarking charge for the piece, paise (rides the making/service GST path) */
+  hallmarkChargePaise: zPaise.default(0),
+  /** flat packing charge, paise */
+  packingChargePaise: zPaise.default(0),
+  /** any other flat charge, paise */
+  otherChargePaise: zPaise.default(0),
+  /** BIS hallmark unique id (HUID) / certificate number, if hallmarked */
+  hallmarkNo: z.string().max(60).optional(),
+  hallmarkAgency: z.string().max(120).optional(),
   /** true → studded jewellery → composite 3% GST on whole item value */
   isStudded: z.boolean().default(false),
   /** false → imitation jewellery path (18%, HSN 7117) */
