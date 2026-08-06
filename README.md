@@ -80,10 +80,15 @@ in-browser viewing. A **read (OCR)** button reads an uploaded bill photo
 server-side and shows the recognized fields (bill no, date, total,
 weights, rate, phone) as a draft to copy into a new online bill.
 
-The **Billing** page has **CSV report downloads** (ADMIN only): the
-bills register (one row per document, taxes split
-CGST/SGST/IGST) and the GST summary (totals per rate bucket) for any
-date range.
+The **Billing** page has six **CSV report downloads** (ADMIN only) for any
+date range: the bills register (one row per document, taxes split
+CGST/SGST/IGST), the GST summary (totals per rate bucket), sales by day,
+the payment ledger, per-customer trade (lifetime billed, outstanding, last
+purchase) and the purchase register with supplier dues.
+
+The **Dashboard** opens with today's trade — sales, cash collected,
+total outstanding and open orders — alongside the board rates and the
+live stock position.
 
 ### 5. Mobile (`apps/mobile`) — bare React Native (CLI)
 

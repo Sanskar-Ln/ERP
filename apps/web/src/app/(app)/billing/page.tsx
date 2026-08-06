@@ -156,7 +156,7 @@ function ReportDownloads() {
   const [err, setErr] = useState('');
   if (!isAdmin()) return null; // reports are ADMIN-only (API enforces too)
 
-  async function download(kind: 'documents' | 'gst-summary') {
+  async function download(kind: 'documents' | 'gst-summary' | 'sales' | 'payments' | 'customers' | 'purchases') {
     setErr('');
     try {
       const blob = await apiBlob(`/reports/${kind}.csv?from=${from}&to=${to}T23:59:59Z`);
@@ -179,11 +179,16 @@ function ReportDownloads() {
         <input className="input w-40" type="date" value={to} onChange={(e) => setTo(e.target.value)} />
         <button className="btn" onClick={() => void download('documents')}>Bills register</button>
         <button className="btn-secondary" onClick={() => void download('gst-summary')}>GST summary</button>
+        <button className="btn-secondary" onClick={() => void download('sales')}>Sales by day</button>
+        <button className="btn-secondary" onClick={() => void download('payments')}>Payments</button>
+        <button className="btn-secondary" onClick={() => void download('customers')}>Customers</button>
+        <button className="btn-secondary" onClick={() => void download('purchases')}>Purchases</button>
         {err && <span className="text-sm text-red-600">{err}</span>}
       </div>
       <p className="mt-2 text-xs text-neutral-500">
         Bills register: one row per document with taxes split CGST/SGST/IGST. GST summary: totals per rate
-        bucket over issued tax invoices — the starting point for filing.
+        bucket over issued tax invoices — the starting point for filing. Sales by day, the payment ledger,
+        per-customer trade (with what each still owes) and the purchase register round out the set.
       </p>
     </section>
   );

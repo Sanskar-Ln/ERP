@@ -32,22 +32,32 @@ interface Doc {
   status: string;
   grandTotalPaise: number;
 }
+/** Aggregated shop metrics — same endpoint the web dashboard tiles use. */
+interface Metrics {
+  sales: { todayPaise: number; todayCount: number };
+  payments: { collectedTodayPaise: number; receivablePaise: number; unpaidInvoiceCount: number };
+  orders: { open: number };
+  purchases: { supplierDuePaise: number };
+}
 
 export default function DashboardScreen(): React.JSX.Element {
   const [rateCards, setRateCards] = useState<{ key: string; title: string; paise: number }[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [docs, setDocs] = useState<Doc[]>([]);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     setRefreshing(true);
     try {
-      const [metals, rates, sum, documents] = await Promise.all([
+      const [metals, rates, sum, documents, m] = await Promise.all([
         api<Metal[]>('GET', '/metals'),
         api<RateRow[]>('GET', '/metal-rates'),
         api<Summary>('GET', '/stock/summary'),
         api<Doc[]>('GET', '/documents'),
+        api<Metrics>('GET', '/dashboard/metrics'),
       ]);
+      setMetrics(m);
       const latest = new Map<string, RateRow>();
       for (const r of [...rates].sort((a, b) => a.effectiveAt.localeCompare(b.effectiveAt))) {
         latest.set(`${r.metalId}:${r.purityId}`, r);
@@ -77,6 +87,32 @@ export default function DashboardScreen(): React.JSX.Element {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => void load()} tintColor={color.gold500} />}
     >
       <ScreenHeader title="Dashboard" description={`${session.user()?.name} · ${session.user()?.role}`} />
+
+      {metrics && (
+        <>
+          <SectionTitle>Today</SectionTitle>
+          <View style={styles.grid}>
+            <StatTile
+              label="Sales today"
+              value={inr(metrics.sales.todayPaise)}
+              foot={<Text style={styles.meta}>{metrics.sales.todayCount} invoice(s)</Text>}
+              style={styles.gridTile}
+            />
+            <StatTile
+              label="Collected today"
+              value={inr(metrics.payments.collectedTodayPaise)}
+              style={styles.gridTile}
+            />
+            <StatTile
+              label="Outstanding"
+              value={inr(metrics.payments.receivablePaise)}
+              foot={<Text style={styles.meta}>{metrics.payments.unpaidInvoiceCount} unpaid bill(s)</Text>}
+              style={styles.gridTile}
+            />
+            <StatTile label="Open orders" value={String(metrics.orders.open)} style={styles.gridTile} />
+          </View>
+        </>
+      )}
 
       <SectionTitle>Board rates (per 10 g)</SectionTitle>
       <View style={styles.grid}>

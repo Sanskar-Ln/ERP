@@ -238,9 +238,35 @@ the full milestone list and ARCHITECTURE.md for the system map.
   roles, order and PO created through the UI, zero overflow/errors),
   102 unit tests, 4 typechecks, mobile production bundle.
 
+- **Post-MVP: Phase C — dashboard metrics & manager reports** — a new
+  `GET /dashboard/metrics` (both roles) aggregates the shop's live
+  picture from the SAME sources the list pages use, so tiles can never
+  disagree with lists: today's sales and bill count, cash collected today
+  (payments less refunds), total receivable with the unpaid-bill count
+  (derived per invoice through the pure payment summariser), stock by
+  status with low-stock categories, the open-order count by pipeline
+  stage, and procurement value plus outstanding supplier dues. The web
+  dashboard leads with those four tiles (skeletons while loading) and a
+  dues/low-stock hint line; the mobile manager dashboard shows the same
+  four. Reports grew from two CSVs to six — added `sales.csv` (per-day
+  bills/taxable/tax/total with a reconciling TOTAL row), `payments.csv`
+  (the ledger with net total), `customers.csv` (lifetime billed,
+  outstanding, last purchase, rate concession) and `purchases.csv` (PO
+  register with supplier settlement), all ADMIN-only with buttons on
+  Billing. Also fixed a real display bug the screenshots caught: the
+  dashboard stock table showed one row per (branch, status) so the same
+  status appeared twice unlabelled — branches are now folded together.
+  Verified: 25-check API smoke (metric deltas reconciled exactly against
+  a freshly issued invoice, its part payment and its refund; every CSV
+  parsed with its header, data rows and an OPS 403; sales TOTAL equals
+  the sum of its day rows) + 27-check Playwright sweep (tiles show real
+  ₹ values for both roles at 390/1440, no duplicate status rows, all six
+  downloads land, OPS sees no reports card), 102 unit tests, 4
+  typechecks, mobile production bundle.
+
 ## In progress
 
-Nothing — **the MVP scope is complete and pushed.**
+Nothing — **the MVP scope plus Phases A–C are complete and pushed.**
 
 ## Resume point
 

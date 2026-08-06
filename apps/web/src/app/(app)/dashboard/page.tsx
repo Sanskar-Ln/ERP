@@ -74,17 +74,26 @@ interface Summary {
   totalGrossWeightG: string;
   totalNetWeightG: string;
 }
+interface Metrics {
+  sales: { todayPaise: number; todayCount: number; windowPaise: number; windowCount: number; windowTaxPaise: number };
+  payments: { collectedTodayPaise: number; receivablePaise: number; unpaidInvoiceCount: number };
+  stock: { byStatus: { status: string; items: number; pieces: number }[]; lowStock: { category: string; pieces: number }[] };
+  orders: { open: number; byStatus: { status: string; count: number }[] };
+  purchases: { windowPaise: number; supplierDuePaise: number };
+}
 
 export default function DashboardPage() {
   // null = still loading (skeleton tiles shown), [] = loaded and empty
   const [metals, setMetals] = useState<Metal[] | null>(null);
   const [rates, setRates] = useState<RateRow[]>([]);
   const [summary, setSummary] = useState<Summary | null>(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
 
   useEffect(() => {
     void api<Metal[]>('GET', '/metals').then(setMetals);
     void api<RateRow[]>('GET', '/metal-rates').then(setRates);
     void api<Summary>('GET', '/stock/summary').then(setSummary);
+    void api<Metrics>('GET', '/dashboard/metrics').then(setMetrics);
   }, []);
 
   // newest rate per (metal, purity)
@@ -95,7 +104,52 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" description="Today’s board rates and the live stock position" />
+      <PageHeader title="Dashboard" description="Today’s trade, board rates and the live stock position" />
+
+      {/* ---- today's business: sales, collection, receivables, pipeline ---- */}
+      <section className="mb-6">
+        <h2 className="section-title mb-3">Today</h2>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {metrics === null ? (
+            Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton h-[104px] rounded-2xl" />)
+          ) : (
+            <>
+              <StatTile
+                label="Sales today"
+                value={inr(metrics.sales.todayPaise)}
+                foot={`${metrics.sales.todayCount} ${metrics.sales.todayCount === 1 ? 'invoice' : 'invoices'}`}
+              />
+              <StatTile
+                label="Collected today"
+                value={inr(metrics.payments.collectedTodayPaise)}
+                foot="payments less refunds"
+              />
+              <StatTile
+                label="Outstanding"
+                value={inr(metrics.payments.receivablePaise)}
+                foot={`${metrics.payments.unpaidInvoiceCount} unpaid ${metrics.payments.unpaidInvoiceCount === 1 ? 'bill' : 'bills'}`}
+              />
+              <StatTile
+                label="Open orders"
+                value={metrics.orders.open}
+                foot={
+                  metrics.orders.byStatus
+                    .filter((o) => !['DELIVERED', 'COMPLETED', 'CANCELLED'].includes(o.status))
+                    .map((o) => `${o.count} ${o.status.toLowerCase()}`)
+                    .join(' · ') || 'nothing in the queue'
+                }
+              />
+            </>
+          )}
+        </div>
+        {metrics && metrics.purchases.supplierDuePaise > 0 && (
+          <p className="hint mt-2">
+            Supplier dues outstanding: {inr(metrics.purchases.supplierDuePaise)}
+            {metrics.stock.lowStock.length > 0 &&
+              ` · low stock: ${metrics.stock.lowStock.map((l) => `${l.category} (${l.pieces})`).join(', ')}`}
+          </p>
+        )}
+      </section>
 
       <section className="mb-6">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -134,13 +188,24 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {summary.byStatus.map((row, i) => (
-                  <tr key={i}>
+                {/* /stock/summary groups by (branch, status); this page has no
+                    branch context, so fold the branches together — otherwise
+                    the same status appears once per branch with no label. */}
+                {Object.entries(
+                  summary.byStatus.reduce<Record<string, { items: number; pieces: number }>>((acc, row) => {
+                    const a = acc[row.status] ?? { items: 0, pieces: 0 };
+                    a.items += row._count._all;
+                    a.pieces += row._sum.pieces ?? 0;
+                    acc[row.status] = a;
+                    return acc;
+                  }, {}),
+                ).map(([status, t]) => (
+                  <tr key={status}>
                     <td className="td">
-                      <Badge status={row.status} />
+                      <Badge status={status} />
                     </td>
-                    <td className="td num">{row._count._all}</td>
-                    <td className="td num">{row._sum.pieces ?? 0}</td>
+                    <td className="td num">{t.items}</td>
+                    <td className="td num">{t.pieces}</td>
                   </tr>
                 ))}
               </tbody>

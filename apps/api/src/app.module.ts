@@ -13,6 +13,7 @@ import { PaperBillsModule } from './modules/paper-bills/paper-bills.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { PurchasesModule } from './modules/purchases/purchases.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 /** Liveness probe — public, no DB touch. */
 @Controller('health')
@@ -35,6 +36,7 @@ class HealthController {
     ReportsModule,
     PurchasesModule,
     OrdersModule,
+    DashboardModule,
   ],
   controllers: [HealthController],
 })
