@@ -61,6 +61,16 @@ const STATUS_TONE: Record<string, string> = {
   COMPLETED: 'badge-good',
   // purchase orders
   ORDERED: 'badge-info',
+  // label shapes & printers
+  DUMBBELL: 'badge-info',
+  RECTANGLE: 'badge-neutral',
+  ZPL: 'badge-good',
+  TSPL: 'badge-good',
+  HTML: 'badge-neutral',
+  AUTO: 'badge-warn',
+  NETWORK: 'badge-info',
+  BROWSER: 'badge-neutral',
+  DOWNLOAD: 'badge-neutral',
 };
 
 /** Status pill — tone by status, text label always visible. */

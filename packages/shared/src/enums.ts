@@ -127,6 +127,66 @@ export const BarcodeSymbology = {
 } as const;
 export type BarcodeSymbology = (typeof BarcodeSymbology)[keyof typeof BarcodeSymbology];
 
+/**
+ * Physical shape of a label.
+ * - RECTANGLE: a plain sticker.
+ * - DUMBBELL: the jewellery "butterfly" tag — two printable flags joined by
+ *   a narrow neck that wraps around a ring shank or chain. Both flags print.
+ */
+export const TagShape = {
+  RECTANGLE: 'RECTANGLE',
+  DUMBBELL: 'DUMBBELL',
+} as const;
+export type TagShape = (typeof TagShape)[keyof typeof TagShape];
+
+/** Where a field sits on the label. LEFT/RIGHT are the dumbbell flags. */
+export const LabelRegion = {
+  MAIN: 'MAIN',
+  LEFT: 'LEFT',
+  RIGHT: 'RIGHT',
+} as const;
+export type LabelRegion = (typeof LabelRegion)[keyof typeof LabelRegion];
+
+/** Printable fields. PRICE_TEXT is a static marker — never a number. */
+export const LabelField = {
+  BARCODE: 'BARCODE',
+  ITEM_CODE: 'ITEM_CODE',
+  NAME: 'NAME',
+  CATEGORY: 'CATEGORY',
+  GROSS_WEIGHT: 'GROSS_WEIGHT',
+  NET_WEIGHT: 'NET_WEIGHT',
+  PURITY: 'PURITY',
+  PIECES: 'PIECES',
+  HALLMARK: 'HALLMARK',
+  PRICE_TEXT: 'PRICE_TEXT',
+} as const;
+export type LabelField = (typeof LabelField)[keyof typeof LabelField];
+
+/**
+ * Printer command language. AUTO means "ask the hardware" — identification
+ * probes the device and resolves this to a concrete language.
+ */
+export const PrinterLanguage = {
+  ZPL: 'ZPL',
+  TSPL: 'TSPL',
+  HTML: 'HTML',
+  AUTO: 'AUTO',
+} as const;
+export type PrinterLanguage = (typeof PrinterLanguage)[keyof typeof PrinterLanguage];
+
+/**
+ * How a print job reaches the printer.
+ * - BROWSER:  render HTML, the shop PC's own driver prints it (zero setup)
+ * - DOWNLOAD: hand back the raw command file to send to the printer
+ * - NETWORK:  push raw commands to host:port (usually 9100) — LAN only
+ */
+export const PrinterConnection = {
+  BROWSER: 'BROWSER',
+  DOWNLOAD: 'DOWNLOAD',
+  NETWORK: 'NETWORK',
+} as const;
+export type PrinterConnection = (typeof PrinterConnection)[keyof typeof PrinterConnection];
+
 /** How making charges are quoted on an item. */
 export const MakingChargeType = {
   /** flat paise per piece */

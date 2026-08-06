@@ -264,9 +264,40 @@ the full milestone list and ARCHITECTURE.md for the system map.
   downloads land, OPS sees no reports card), 102 unit tests, 4
   typechecks, mobile production bundle.
 
+- **Post-MVP: jewellery tag designs, desktop scan/search, printer-agnostic
+  printing** — tagging grew from "one hard-coded 40×12 sheet" into a real
+  labelling system, built so **nothing is coupled to a printer**:
+  (1) a pure `label-layout` engine turns a template + tag into
+  device-independent millimetre geometry, supporting the **dumbbell /
+  butterfly** jewellery tag (two printable flags joined by a neck that
+  wraps the ring or chain — the neck is never printed on) as well as plain
+  rectangles; (2) three interchangeable renderers consume that same
+  layout — **ZPL** (Zebra), **TSPL** (TSC/Godex/Argox) and **HTML** (any
+  driver already on the shop PC); (3) **printer profiles with hardware
+  identification**: a printer can be registered as `AUTO` before anyone
+  knows its brand, and `POST /printers/:id/identify` probes it (`~HI` /
+  `~!T`), reads the model and resolves the language — an unrecognised
+  dialect stays AUTO rather than printing garbage; delivery routes by
+  connection (BROWSER / DOWNLOAD / NETWORK:9100). (4) The web page now has
+  a **scan-or-search box** — the desktop capability that was missing
+  entirely — where a USB scanner (which just types + Enter) or free text
+  resolves to the full piece: weights, purity, stones, status and the
+  **live price at today's board rate**; plus a **design studio** with
+  jewellery presets (75×13, 60×11 dumbbell; 40×12, 50×25 sticker), field
+  placement per flag, geometry validation and a true rendered preview.
+  Verified: 27 domain tests (layout geometry, golden ZPL/TSPL strings,
+  identity classification), a **fake Zebra on TCP 9100** proving identify
+  resolves AUTO→ZPL with model `ZD230-203dpi` and that the printer
+  receives byte-identical ZPL, a 29-check API smoke and a 26-check
+  Playwright sweep (scan→price, design→save→preview, register→identify→
+  print), 130 unit tests, 4 typechecks, mobile bundle. **Not verified: a
+  physical printer** — there is none in this environment, so real-world
+  offset/darkness may need a first-print tweak.
+
 ## In progress
 
-Nothing — **the MVP scope plus Phases A–C are complete and pushed.**
+Nothing — **the MVP scope plus Phases A–C and the tagging system are
+complete and pushed.**
 
 ## Resume point
 

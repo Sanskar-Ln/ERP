@@ -90,6 +90,25 @@ The **Dashboard** opens with today's trade — sales, cash collected,
 total outstanding and open orders — alongside the board rates and the
 live stock position.
 
+The **Tags & labels** page (admin) does three things:
+
+- **Scan or search** — point a USB barcode scanner at the box (it just
+  types the code and presses Enter, so no driver is needed) or type an
+  item code/name. You get the whole piece: weights, purity, stones,
+  status and its **price at today's board rate**.
+- **Design labels** in millimetres — plain rectangle stickers or the
+  jewellery **dumbbell tag** (two flags joined by a neck that wraps the
+  ring or chain), with presets (75×13, 60×11, 40×12, 50×25), per-flag
+  field placement and a rendered preview.
+- **Print** — register printers and hit *Identify*: a network printer is
+  asked what it is and the right command language (**ZPL** for Zebra,
+  **TSPL** for TSC/Godex/Argox) is chosen from its own reply, so you can
+  add a printer before knowing its brand. Jobs go out over the network
+  (port 9100), as a downloadable command file, or through the browser's
+  own print dialog if you just have an ordinary printer and sticker
+  sheets. Barcodes stay price-free, so a rate change never means
+  reprinting tags.
+
 ### 5. Mobile (`apps/mobile`) — bare React Native (CLI)
 
 The mobile app uses the React Native **CLI** (not Expo), so the native

@@ -134,6 +134,24 @@ enum PaymentKind {
   REFUND
 }
 
+enum TagShape {
+  RECTANGLE
+  DUMBBELL
+}
+
+enum PrinterLanguage {
+  ZPL
+  TSPL
+  HTML
+  AUTO
+}
+
+enum PrinterConnection {
+  BROWSER
+  DOWNLOAD
+  NETWORK
+}
+
 enum PurchaseOrderStatus {
   DRAFT
   ORDERED
@@ -641,17 +659,50 @@ model Tag {
   @@index([tenantId, itemId])
 }
 
+// A named PHYSICAL label layout, described in millimetres and deliberately
+// device-independent: which printer language renders it (ZPL/TSPL/HTML) is
+// chosen at print time from the Printer profile, so a template outlives any
+// particular piece of hardware. DUMBBELL is the jewellery butterfly tag —
+// two printable flags joined by a neck that wraps the ring shank or chain.
 model LabelTemplate {
-  id        String           @id
-  tenantId  String
-  name      String
-  widthMm   Int
-  heightMm  Int
-  symbology BarcodeSymbology @default(CODE128)
-  fields    Json // ordered field list, see zCreateLabelTemplate
-  isDefault Boolean          @default(false)
+  id          String           @id
+  tenantId    String
+  name        String
+  shape       TagShape         @default(RECTANGLE)
+  widthMm     Decimal          @db.Decimal(6, 2)
+  heightMm    Decimal          @db.Decimal(6, 2)
+  /** dumbbell only — leftFlag + neck + rightFlag must equal widthMm */
+  leftFlagMm  Decimal?         @db.Decimal(6, 2)
+  neckMm      Decimal?         @db.Decimal(6, 2)
+  rightFlagMm Decimal?         @db.Decimal(6, 2)
+  symbology   BarcodeSymbology @default(CODE128)
+  fields      Json // [{ field, region, fontPt }] — see zCreateLabelTemplate
+  isDefault   Boolean          @default(false)
 
   @@unique([tenantId, name])
+}
+
+// A printer the shop can send label jobs to. `language: AUTO` means the
+// hardware has not been identified yet — POST /printers/:id/identify probes
+// the device and resolves it, so a printer can be registered before anyone
+// knows its brand.
+model Printer {
+  id            String            @id
+  tenantId      String
+  name          String
+  connection    PrinterConnection @default(BROWSER)
+  language      PrinterLanguage   @default(AUTO)
+  host          String? // required for NETWORK
+  port          Int               @default(9100)
+  dpi           Int               @default(203)
+  isDefault     Boolean           @default(false)
+  /** model string reported by the printer at the last successful identify */
+  detectedModel String?
+  lastSeenAt    DateTime?
+  createdAt     DateTime          @default(now())
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
 }
 
 model LabelBatch {
